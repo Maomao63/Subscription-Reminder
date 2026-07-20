@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111318">
   <title>Subtrack · Subscription Reminder</title>
-  <link rel="stylesheet" href="/styles.css?v=1.1.1">
+  <link rel="stylesheet" href="/styles.css?v=1.2.0">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -31,13 +31,13 @@
     <aside class="sidebar glass">
       <div class="brand"><span class="brand-mark">S</span><span>subtrack</span></div>
       <nav>
-        <button class="nav-item active" data-view="dashboard">Dashboard</button>
-        <button class="nav-item" data-view="categories"><span class="icon">◇</span>Categories</button>
-        <button class="nav-item" data-view="settings"><span class="icon">⚙</span>Settings</button>
+        <button class="nav-item active" data-view="dashboard"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Dashboard</button>
+        <button class="nav-item" data-view="categories"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13 13 20 4 11V4h7z"/><circle cx="8.5" cy="8.5" r="1.2"/></svg>Categories</button>
+        <button class="nav-item" data-view="settings"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/></svg>Settings</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="status-dot"><i></i><span>System online</span></div>
-        <button id="logout" class="nav-item"><span class="icon">↪</span>Sign out</button>
+        <button id="logout" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M9 12h9"/></svg>Sign out</button>
       </div>
     </aside>
 
@@ -53,14 +53,14 @@
       <main class="content">
         <section id="dashboard-view" class="view active">
           <div class="hero glass">
-            <div><span class="eyebrow">YOUR OVERVIEW</span><h1>Welcome, <span id="greeting-name">Admin</span>.</h1><p>Everything important about your subscriptions at a glance.</p></div>
+            <div><div class="hero-meta"><span class="eyebrow">YOUR OVERVIEW</span><span class="version-chip">Docker image · v1.2.0</span></div><h1>Welcome, <span id="greeting-name">Admin</span>.</h1><p>Everything important about your subscriptions at a glance.</p></div>
             <button class="button primary" data-open-reminder><span>＋</span>Add reminder</button>
           </div>
 
           <div class="stats-grid">
-            <article class="stat-card glass"><span class="stat-icon purple">◫</span><div><strong id="stat-active">0</strong><p>Active subscriptions</p></div><span class="trend">Total</span></article>
-            <article class="stat-card glass"><span class="stat-icon cyan">◷</span><div><strong id="stat-soon">0</strong><p>Expiring soon</p></div><span class="trend warning">30 days</span></article>
-            <article class="stat-card glass"><span class="stat-icon green">✓</span><div><strong id="stat-channels">0</strong><p>Channels enabled</p></div><span class="trend">Live</span></article>
+            <article class="stat-card glass"><span class="stat-icon purple"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span><div><strong id="stat-active">0</strong><p>Active subscriptions</p></div><span class="trend">Total</span></article>
+            <article class="stat-card glass"><span class="stat-icon cyan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><strong id="stat-soon">0</strong><p>Expiring soon</p></div><span class="trend warning">30 days</span></article>
+            <article class="stat-card glass"><span class="stat-icon green"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span><div><strong id="stat-channels">0</strong><p>Channels enabled</p></div><span class="trend">Live</span></article>
           </div>
 
           <div class="section-head"><div><h3>Your subscriptions</h3><p id="subscription-count">0 entries</p></div><div class="filters"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="soon">Expiring soon</button></div></div>
@@ -76,9 +76,9 @@
         <section id="settings-view" class="view">
           <div class="page-head"><div><p class="eyebrow">CONFIGURATION</p><h1>Settings</h1><p>Choose how you want to receive reminders.</p></div></div>
           <div class="settings-grid">
-            <article class="settings-card glass"><div class="settings-heading"><span class="channel-logo discord">◈</span><div><h3>Discord</h3><p>Send notifications through a webhook.</p></div><span id="discord-status" class="badge">Not connected</span></div><form id="discord-form" novalidate><label>Webhook URL<div class="input-action"><input id="discord-webhook" type="url" placeholder="https://discord.com/api/webhooks/…"><button type="button" id="toggle-webhook" aria-label="Show URL">◉</button></div></label><div id="discord-error" class="form-error hidden" role="alert"></div><div class="button-row"><button class="button secondary" id="test-discord" type="button">Send test</button><button class="button primary" type="submit">Save</button></div></form></article>
+            <article class="settings-card glass"><div class="settings-heading"><span class="channel-logo discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8a12 12 0 0 1 8 0l2 8a14 14 0 0 1-3 1.5L13.5 16h-3L9 17.5A14 14 0 0 1 6 16z"/><circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/></svg></span><div><h3>Discord</h3><p>Send notifications through a webhook.</p></div><span id="discord-status" class="badge">Not connected</span></div><form id="discord-form" novalidate><label>Webhook URL<div class="input-action"><input id="discord-webhook" type="password" autocomplete="off" placeholder="https://discord.com/api/webhooks/…"><button type="button" id="toggle-webhook" aria-label="Show URL">Show</button></div></label><div class="form-grid mention-grid"><label>Final reminder mention<select id="discord-mention-type"><option value="none">No mention</option><option value="role">Discord role</option><option value="user">Discord user</option><option value="everyone">@everyone</option><option value="here">@here</option></select></label><label id="discord-mention-id-field">Role or user ID<input id="discord-mention-id" inputmode="numeric" placeholder="e.g. 123456789012345678"></label></div><p class="field-help">The configured target is mentioned only in the final 1-day reminder. Enable Discord Developer Mode, then copy the role or user ID.</p><div id="discord-error" class="form-error hidden" role="alert"></div><div class="button-row"><button class="button secondary" id="test-discord" type="button">Send connection test</button><button class="button primary" type="submit">Save settings</button></div></form></article>
             <article id="browser-settings-card" class="settings-card glass"><div class="settings-heading"><span class="channel-logo browser"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><div><h3>Browser pop-ups</h3><p>Native notifications directly in Windows.</p></div><span id="browser-status" class="badge">Unknown</span></div><div class="browser-info"><p id="browser-help">Your browser asks for permission once. Due reminders then appear as system notifications while Subtrack is open.</p><div id="browser-error" class="form-error hidden" role="alert"></div><button class="button primary" id="enable-browser" type="button">Enable notifications</button></div></article>
-            <article class="settings-card glass password-card"><div class="settings-heading"><span class="channel-logo security">⌁</span><div><h3>Security</h3><p>Change your personal password.</p></div></div><button class="button secondary" id="open-password">Change password</button></article>
+            <article class="settings-card glass password-card"><div class="settings-heading"><span class="channel-logo security"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg></span><div><h3>Security</h3><p>Change your personal password.</p></div></div><button class="button secondary" id="open-password">Change password</button></article>
           </div>
         </section>
       </main>
@@ -92,16 +92,16 @@
       <label>Subscription name<input id="reminder-name" placeholder="e.g. Spotify Premium" required maxlength="80"></label>
       <div class="form-grid"><label>Expiration date<input id="reminder-date" type="date" required></label><label>Category<select id="reminder-category"></select></label></div>
       <label>Remind me in advance<div class="range-row"><input id="reminder-days" type="range" min="0" max="30" value="7"><output id="days-output">7 days</output></div></label>
-      <div class="toggle-list"><label class="toggle-row"><span><b>Discord notification</b><small>Notify through your webhook</small></span><input id="reminder-discord" type="checkbox"><i></i></label><label class="toggle-row"><span><b>Browser pop-up</b><small>Native Windows notification</small></span><input id="reminder-browser" type="checkbox"><i></i></label></div>
+      <div class="toggle-list"><label class="toggle-row"><span><b>Discord notification</b><small>Notify through your webhook</small></span><input id="reminder-discord" type="checkbox"><i></i></label><label class="toggle-row"><span><b>Browser pop-up</b><small>Native Windows notification</small></span><input id="reminder-browser" type="checkbox"><i></i></label></div><div id="reminder-discord-test" class="notification-test hidden"><div><b>Test this Discord reminder</b><small>Sends the current name and selected lead time without mentioning your final-alert target.</small></div><button id="test-reminder-discord" class="button secondary" type="button">Send test</button></div><div id="reminder-test-result" class="inline-result hidden" role="status"></div>
       <div id="reminder-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><button class="button ghost" type="button" data-close-dialog>Cancel</button><button class="button primary" id="save-reminder" type="submit">Save reminder</button></div>
     </form>
   </dialog>
 
   <dialog id="category-dialog" class="modal small-modal"><form id="category-form" method="dialog" novalidate><div class="modal-head"><div><p class="eyebrow">ORGANIZATION</p><h2>New category</h2></div><button class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><label>Name<input id="category-name" placeholder="e.g. Insurance" maxlength="30"></label><label>Accent color<input id="category-color" type="color" value="#8b5cf6"></label><div id="category-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><button class="button ghost" type="button" data-close-dialog>Cancel</button><button class="button primary" type="submit">Add category</button></div></form></dialog>
 
-  <dialog id="password-dialog" class="modal small-modal"><div id="password-form" class="dialog-form"><div class="modal-head"><div><p class="eyebrow">SECURITY</p><h2>Choose a secure password</h2></div><button id="password-close" class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><p class="modal-copy">Use at least 10 characters including uppercase, lowercase and a number.</p><label>Current password<input id="current-password" type="password" autocomplete="current-password"></label><label>New password<input id="new-password" type="password" autocomplete="new-password"></label><label>Confirm new password<input id="confirm-password" type="password" autocomplete="new-password"></label><div id="password-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><span class="build-version">Build 1.1.1</span><button class="button ghost password-cancel" type="button" data-close-dialog>Later</button><button class="button primary" id="password-submit" type="button">Save password</button></div></div></dialog>
+  <dialog id="password-dialog" class="modal small-modal"><div id="password-form" class="dialog-form"><div class="modal-head"><div><p class="eyebrow">SECURITY</p><h2>Choose a secure password</h2></div><button id="password-close" class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><p class="modal-copy">Use at least 10 characters including uppercase, lowercase and a number.</p><label>Current password<input id="current-password" type="password" autocomplete="current-password"></label><label>New password<input id="new-password" type="password" autocomplete="new-password"></label><label>Confirm new password<input id="confirm-password" type="password" autocomplete="new-password"></label><div id="password-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><span class="build-version">Build 1.2.0</span><button class="button ghost password-cancel" type="button" data-close-dialog>Later</button><button class="button primary" id="password-submit" type="button">Save password</button></div></div></dialog>
 
   <div id="toast-region" class="toast-region hidden" aria-live="polite"></div>
-  <script src="/app.js?v=1.1.1" defer></script>
+  <script src="/app.js?v=1.2.0" defer></script>
 </body>
 </html>

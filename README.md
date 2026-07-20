@@ -85,7 +85,7 @@ Beim ersten Start einen Benutzernamen wählen und anschließend mit dem Startpas
 
 ## Benachrichtigungen
 
-- **Discord:** In den Einstellungen eine Discord-Webhook-URL eintragen und mit „Test senden“ prüfen. Der Server kontrolliert fällige Reminder jede Minute, auch wenn das Web-UI geschlossen ist.
+- **Discord:** In den Einstellungen eine Discord-Webhook-URL eintragen und mit „Test senden“ prüfen. Jeder Reminder sendet zuerst zum gewählten Vorlauf (z. B. „30 days left“) und zusätzlich einen finalen Hinweis einen Tag vor Ablauf. Für den finalen Hinweis kann eine Discord-Rolle, ein Benutzer, `@everyone` oder `@here` als Ping-Ziel gewählt werden. Im Reminder-Dialog lässt sich die Nachricht vorab ohne Ping testen. Der Server kontrolliert fällige Reminder jede Minute, auch wenn das Web-UI geschlossen ist.
 - **Browser/Windows:** Berechtigung in den Einstellungen aktivieren. Browser-Pop-ups funktionieren unabhängig von Discord und erscheinen, solange Subtrack in einem Browser-Tab geöffnet ist. Außer auf `localhost` benötigen Browser-Benachrichtigungen HTTPS.
 
 ## Image aktualisieren

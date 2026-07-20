@@ -101,6 +101,9 @@ function showApp() {
   $('#greeting-name').textContent = state.user.username;
   $('#avatar').textContent = state.user.username.charAt(0).toUpperCase();
   $('#discord-webhook').value = state.settings.discordWebhook || '';
+  $('#discord-mention-type').value = state.settings.discordMentionType || 'none';
+  $('#discord-mention-id').value = state.settings.discordMentionId || '';
+  updateMentionField();
   renderAll(); updateBrowserStatus(); startBrowserPolling();
   if (state.user.mustChangePassword) openPassword(true);
 }
@@ -132,7 +135,7 @@ function renderReminders() {
     return `<article class="reminder-card" style="--accent:${category.color}">
       <div class="card-top"><div class="service-icon">${escapeHtml(reminder.name.charAt(0))}</div><div class="card-menu"><button class="menu-button" data-menu="${reminder.id}" aria-label="Actions">•••</button><div class="card-menu-items"><button data-edit="${reminder.id}">Edit</button><button class="delete" data-delete="${reminder.id}">Delete</button></div></div></div>
       <span class="category-pill"><i></i>${escapeHtml(category.name)}</span><h3>${escapeHtml(reminder.name)}</h3><p class="expiry">Expires on <strong>${formatDate(reminder.expiresAt)}</strong></p>
-      <div class="countdown"><span class="days-left">Status<b>${dayText}</b></span><div class="channel-icons"><span class="${reminder.discord ? 'on' : ''}" title="Discord">D</span><span class="${reminder.browser ? 'on' : ''}" title="Browser">B</span></div></div>
+      <div class="countdown"><span class="days-left">Status<b>${dayText}</b></span><div class="channel-icons"><span class="${reminder.discord ? 'on' : ''}" title="Discord" aria-label="Discord ${reminder.discord ? 'enabled' : 'disabled'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8a12 12 0 0 1 8 0l2 8a14 14 0 0 1-3 1.5L13.5 16h-3L9 17.5A14 14 0 0 1 6 16z"/><circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/></svg></span><span class="${reminder.browser ? 'on' : ''}" title="Browser" aria-label="Browser ${reminder.browser ? 'enabled' : 'disabled'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span></div></div>
     </article>`;
   }).join('');
 }
@@ -198,7 +201,9 @@ function openReminder(reminder = null) {
   $('#reminder-days').value = reminder?.remindDays ?? 7;
   $('#reminder-discord').checked = reminder?.discord || false;
   $('#reminder-browser').checked = reminder?.browser || false;
-  updateDaysOutput(); reminderDialog.showModal();
+  $('#reminder-test-result').className = 'inline-result hidden';
+  $('#reminder-test-result').textContent = '';
+  updateDaysOutput(); updateReminderDiscordTestVisibility(); reminderDialog.showModal();
 }
 
 function updateDaysOutput() {
@@ -206,8 +211,44 @@ function updateDaysOutput() {
   $('#days-output').textContent = days === 0 ? 'On the same day' : `${days} ${days === 1 ? 'day' : 'days'}`;
 }
 
+function updateReminderDiscordTestVisibility() {
+  $('#reminder-discord-test').classList.toggle('hidden', !$('#reminder-discord').checked);
+}
+
+function clearReminderTestResult() {
+  $('#reminder-test-result').className = 'inline-result hidden';
+  $('#reminder-test-result').textContent = '';
+}
+
 $$('[data-open-reminder]').forEach(button => button.addEventListener('click', () => openReminder()));
 $('#reminder-days').addEventListener('input', updateDaysOutput);
+$('#reminder-discord').addEventListener('change', () => { updateReminderDiscordTestVisibility(); clearReminderTestResult(); });
+['#reminder-name', '#reminder-date', '#reminder-days'].forEach(selector => $(selector).addEventListener('input', clearReminderTestResult));
+$('#test-reminder-discord').addEventListener('click', async () => {
+  const result = $('#reminder-test-result');
+  if (!state.settings.discordConfigured) {
+    result.textContent = 'Save a Discord webhook in Settings before sending this test.';
+    result.className = 'inline-result error';
+    return;
+  }
+  const name = $('#reminder-name').value.trim();
+  const expiresAt = $('#reminder-date').value;
+  if (!name || !expiresAt) {
+    result.textContent = 'Enter a subscription name and expiration date first.';
+    result.className = 'inline-result error';
+    return;
+  }
+  const button = $('#test-reminder-discord');
+  button.disabled = true; button.textContent = 'Sending…';
+  try {
+    const response = await request('/api/reminders/discord-preview', { method: 'POST', body: JSON.stringify({ name, expiresAt, categoryId: $('#reminder-category').value, remindDays: Number($('#reminder-days').value) }) });
+    result.textContent = `Sent: ${response.title}`;
+    result.className = 'inline-result success';
+  } catch (error) {
+    result.textContent = error.message;
+    result.className = 'inline-result error';
+  } finally { button.disabled = false; button.textContent = 'Send test'; }
+});
 
 $('#reminder-form').addEventListener('submit', async event => {
   event.preventDefault();
@@ -260,7 +301,10 @@ $('#discord-form').addEventListener('submit', async event => {
   event.preventDefault();
   const webhook = $('#discord-webhook').value.trim();
   if (!webhook) return showFormError('#discord-error', 'Enter a Discord webhook URL before saving.');
-  try { const result = await request('/api/settings/discord', { method: 'PUT', body: JSON.stringify({ webhook }) }); state.settings.discordWebhook = webhook; state.settings.discordConfigured = result.configured; updateDiscordStatus(); renderStats(); clearFormError('#discord-error'); toast('Discord settings saved.'); }
+  const mentionType = $('#discord-mention-type').value;
+  const mentionId = $('#discord-mention-id').value.trim();
+  if (['role', 'user'].includes(mentionType) && !/^\d{5,25}$/.test(mentionId)) return showFormError('#discord-error', `Enter a valid Discord ${mentionType} ID.`);
+  try { const result = await request('/api/settings/discord', { method: 'PUT', body: JSON.stringify({ webhook, mentionType, mentionId }) }); state.settings.discordWebhook = webhook; state.settings.discordConfigured = result.configured; state.settings.discordMentionType = result.mentionType; state.settings.discordMentionId = result.mentionId; updateDiscordStatus(); renderStats(); clearFormError('#discord-error'); toast('Discord settings saved.'); }
   catch (error) { showFormError('#discord-error', error.message); }
 });
 $('#test-discord').addEventListener('click', async () => {
@@ -269,7 +313,16 @@ $('#test-discord').addEventListener('click', async () => {
   catch (error) { showFormError('#discord-error', error.message); }
 });
 $('#discord-webhook').addEventListener('input', () => clearFormError('#discord-error'));
-$('#toggle-webhook').addEventListener('click', () => { const input = $('#discord-webhook'); input.type = input.type === 'password' ? 'url' : 'password'; });
+function updateMentionField() {
+  const type = $('#discord-mention-type').value;
+  const needsId = ['role', 'user'].includes(type);
+  $('#discord-mention-id-field').classList.toggle('hidden', !needsId);
+  $('#discord-mention-id-field').childNodes[0].textContent = type === 'user' ? 'User ID' : 'Role ID';
+  $('#discord-mention-id').placeholder = type === 'user' ? 'e.g. user ID' : 'e.g. role ID';
+}
+$('#discord-mention-type').addEventListener('change', () => { updateMentionField(); clearFormError('#discord-error'); });
+$('#discord-mention-id').addEventListener('input', () => clearFormError('#discord-error'));
+$('#toggle-webhook').addEventListener('click', () => { const input = $('#discord-webhook'); const button = $('#toggle-webhook'); const reveal = input.type === 'password'; input.type = reveal ? 'url' : 'password'; button.textContent = reveal ? 'Hide' : 'Show'; button.setAttribute('aria-label', reveal ? 'Hide URL' : 'Show URL'); });
 
 let serviceWorkerRegistration;
 async function ensureServiceWorker() {

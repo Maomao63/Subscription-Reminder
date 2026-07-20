@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.2.0';
 const PORT = Number(process.env.PORT || 13000);
 const DATA_DIR = process.env.CONFIG_DIR || process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = process.env.CONFIG_FILE || path.join(DATA_DIR, 'config.json');
@@ -26,7 +26,7 @@ function initialData() {
       { id: crypto.randomUUID(), name: 'Other', color: '#38bdf8' }
     ],
     reminders: [],
-    settings: { discordWebhook: '' }
+    settings: { discordWebhook: '', discordMentionType: 'none', discordMentionId: '' }
   };
 }
 
@@ -36,8 +36,15 @@ try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
 catch { db = initialData(); save(); }
 
 let migrated = false;
+db.settings ||= {};
+if (db.settings.discordMentionType === undefined) { db.settings.discordMentionType = 'none'; migrated = true; }
+if (db.settings.discordMentionId === undefined) { db.settings.discordMentionId = ''; migrated = true; }
 for (const category of db.categories || []) {
   if (category.name === 'Sonstiges') { category.name = 'Other'; migrated = true; }
+}
+for (const reminder of db.reminders || []) {
+  if (reminder.discordInitialNotifiedAt === undefined) { reminder.discordInitialNotifiedAt = reminder.discordNotifiedAt || null; migrated = true; }
+  if (reminder.discordFinalNotifiedAt === undefined) { reminder.discordFinalNotifiedAt = null; migrated = true; }
 }
 if (migrated) save();
 
@@ -112,7 +119,10 @@ function publicState(current) {
     csrf: current.csrf,
     categories: db.categories,
     reminders: db.reminders,
-    settings: { discordConfigured: Boolean(db.settings.discordWebhook), discordWebhook: db.settings.discordWebhook }
+    settings: {
+      discordConfigured: Boolean(db.settings.discordWebhook), discordWebhook: db.settings.discordWebhook,
+      discordMentionType: db.settings.discordMentionType, discordMentionId: db.settings.discordMentionId
+    }
   };
 }
 
@@ -120,17 +130,33 @@ function validPassword(value) {
   return typeof value === 'string' && value.length >= 10 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value);
 }
 
-async function sendDiscord(reminder, test = false) {
+function discordMention() {
+  const type = db.settings.discordMentionType;
+  const id = db.settings.discordMentionId;
+  if (type === 'role' && id) return { content: `<@&${id}>`, allowed_mentions: { parse: [], roles: [id] } };
+  if (type === 'user' && id) return { content: `<@${id}>`, allowed_mentions: { parse: [], users: [id] } };
+  if (type === 'everyone') return { content: '@everyone', allowed_mentions: { parse: ['everyone'] } };
+  if (type === 'here') return { content: '@here', allowed_mentions: { parse: ['everyone'] } };
+  return { content: '', allowed_mentions: { parse: [] } };
+}
+
+async function sendDiscord(reminder, kind = 'initial') {
   const webhook = db.settings.discordWebhook;
   if (!webhook) throw new Error('No Discord webhook configured.');
   const category = db.categories.find(item => item.id === reminder.categoryId);
   const date = new Date(`${reminder.expiresAt}T12:00:00`).toLocaleDateString('en-GB', { dateStyle: 'long' });
+  const days = kind === 'final' ? 1 : Math.max(0, Number(reminder.remindDays) || 0);
+  const dayLabel = `${days} ${days === 1 ? 'day' : 'days'} left`;
+  const isConnectionTest = kind === 'connection-test';
+  const mention = kind === 'final' ? discordMention() : { content: '', allowed_mentions: { parse: [] } };
   const payload = {
     username: 'Subtrack',
+    content: mention.content,
+    allowed_mentions: mention.allowed_mentions,
     embeds: [{
-      title: test ? 'Test notification successful' : `${reminder.name} expires soon`,
-      description: test ? 'Your Discord connection is working.' : `Your **${reminder.name}** subscription expires on **${date}**.`,
-      color: 0x8b5cf6,
+      title: isConnectionTest ? 'Subtrack connection test' : `${reminder.name} — ${dayLabel}`,
+      description: isConnectionTest ? 'Your Discord webhook is configured correctly.' : kind === 'final' ? `Final reminder: **${reminder.name}** expires on **${date}**.` : `Your **${reminder.name}** subscription expires on **${date}**.`,
+      color: kind === 'final' ? 0xf97316 : 0x8b5cf6,
       fields: category ? [{ name: 'Category', value: category.name, inline: true }] : [],
       footer: { text: 'Subtrack · Subscription Reminder' }, timestamp: new Date().toISOString()
     }]
@@ -139,17 +165,27 @@ async function sendDiscord(reminder, test = false) {
   if (!response.ok) throw new Error(`Discord returned status ${response.status}.`);
 }
 
-function reminderDue(reminder) {
-  const due = new Date(`${reminder.expiresAt}T09:00:00`).getTime() - (Number(reminder.remindDays) || 0) * 86400000;
+function reminderDue(reminder, days = Number(reminder.remindDays) || 0) {
+  const due = new Date(`${reminder.expiresAt}T09:00:00`).getTime() - days * 86400000;
   return Date.now() >= due;
 }
 
 async function processDiscordReminders() {
   for (const reminder of db.reminders) {
-    if (reminder.discord && !reminder.discordNotifiedAt && reminderDue(reminder) && db.settings.discordWebhook) {
-      try { await sendDiscord(reminder); reminder.discordNotifiedAt = new Date().toISOString(); save(); }
-      catch (error) { console.error('Discord notification failed:', error.message); }
-    }
+    if (!reminder.discord || !db.settings.discordWebhook) continue;
+    const initialDays = Math.max(0, Number(reminder.remindDays) || 0);
+    const finalDue = reminderDue(reminder, 1);
+    try {
+      if (!reminder.discordInitialNotifiedAt && initialDays > 1 && reminderDue(reminder, initialDays) && !finalDue) {
+        await sendDiscord(reminder, 'initial');
+        reminder.discordInitialNotifiedAt = new Date().toISOString(); save();
+      }
+      if (!reminder.discordFinalNotifiedAt && finalDue) {
+        await sendDiscord(reminder, 'final');
+        reminder.discordFinalNotifiedAt = new Date().toISOString();
+        reminder.discordInitialNotifiedAt ||= 'skipped-final-window'; save();
+      }
+    } catch (error) { console.error('Discord notification failed:', error.message); }
   }
 }
 
@@ -238,9 +274,22 @@ async function api(req, res, pathname) {
       id: crypto.randomUUID(), name: String(input.name).trim().slice(0, 80), expiresAt: input.expiresAt,
       categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)),
       discord: Boolean(input.discord), browser: Boolean(input.browser), createdAt: new Date().toISOString(),
-      discordNotifiedAt: null, browserNotifiedAt: null
+      discordInitialNotifiedAt: null, discordFinalNotifiedAt: null, browserNotifiedAt: null
     };
     db.reminders.push(reminder); save(); return json(res, 201, reminder);
+  }
+
+  if (pathname === '/api/reminders/discord-preview' && req.method === 'POST') {
+    const current = requireAuth(req, res, true); if (!current) return;
+    const input = await body(req);
+    const name = String(input.name || '').trim();
+    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name and expiration date are required for the Discord test.' });
+    const preview = { name: name.slice(0, 80), expiresAt: input.expiresAt, categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)) };
+    try {
+      await sendDiscord(preview, 'preview');
+      const days = preview.remindDays;
+      return json(res, 200, { ok: true, title: `${preview.name} — ${days} ${days === 1 ? 'day' : 'days'} left` });
+    } catch (error) { return json(res, 502, { error: error.message }); }
   }
 
   const reminderMatch = pathname.match(/^\/api\/reminders\/([\w-]+)$/);
@@ -250,7 +299,7 @@ async function api(req, res, pathname) {
     if (!reminder) return json(res, 404, { error: 'Reminder not found.' });
     const input = await body(req);
     if (!String(input.name || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name and expiration date are required.' });
-    Object.assign(reminder, { name: String(input.name).trim().slice(0, 80), expiresAt: input.expiresAt, categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)), discord: Boolean(input.discord), browser: Boolean(input.browser), discordNotifiedAt: null, browserNotifiedAt: null });
+    Object.assign(reminder, { name: String(input.name).trim().slice(0, 80), expiresAt: input.expiresAt, categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)), discord: Boolean(input.discord), browser: Boolean(input.browser), discordInitialNotifiedAt: null, discordFinalNotifiedAt: null, browserNotifiedAt: null });
     save(); return json(res, 200, reminder);
   }
   if (reminderMatch && req.method === 'DELETE') {
@@ -273,13 +322,20 @@ async function api(req, res, pathname) {
   if (pathname === '/api/settings/discord' && req.method === 'PUT') {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req); const webhook = String(input.webhook || '').trim();
+    const mentionType = String(input.mentionType || 'none');
+    const mentionId = String(input.mentionId || '').trim();
     if (!webhook) return json(res, 400, { error: 'Discord webhook URL is required.' });
     if (!/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(webhook)) return json(res, 400, { error: 'Enter a valid Discord webhook URL.' });
-    db.settings.discordWebhook = webhook; save(); return json(res, 200, { configured: Boolean(webhook) });
+    if (!['none', 'role', 'user', 'everyone', 'here'].includes(mentionType)) return json(res, 400, { error: 'Invalid Discord mention type.' });
+    if (['role', 'user'].includes(mentionType) && !/^\d{5,25}$/.test(mentionId)) return json(res, 400, { error: 'Enter a valid numeric Discord role or user ID.' });
+    db.settings.discordWebhook = webhook;
+    db.settings.discordMentionType = mentionType;
+    db.settings.discordMentionId = ['role', 'user'].includes(mentionType) ? mentionId : '';
+    save(); return json(res, 200, { configured: true, mentionType: db.settings.discordMentionType, mentionId: db.settings.discordMentionId });
   }
   if (pathname === '/api/settings/discord/test' && req.method === 'POST') {
     const current = requireAuth(req, res, true); if (!current) return;
-    try { await sendDiscord({ name: 'Test', expiresAt: new Date().toISOString().slice(0, 10), categoryId: '' }, true); return json(res, 200, { ok: true }); }
+    try { await sendDiscord({ name: 'Test', expiresAt: new Date().toISOString().slice(0, 10), categoryId: '', remindDays: 0 }, 'connection-test'); return json(res, 200, { ok: true }); }
     catch (error) { return json(res, 502, { error: error.message }); }
   }
 
