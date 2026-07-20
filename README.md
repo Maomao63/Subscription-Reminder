@@ -45,6 +45,8 @@ Für Unraid eine `.env` neben der Compose-Datei anlegen:
 ```env
 CONFIG_PATH=/mnt/user/appdata/subscription-reminder
 TZ=Europe/Berlin
+PUID=99
+PGID=100
 ```
 
 ## Andere Linux-Server
@@ -54,6 +56,8 @@ Der Speicherort ist frei wählbar. Lege neben der Compose-Datei eine `.env` an:
 ```env
 CONFIG_PATH=/opt/subscription-reminder
 TZ=Europe/Berlin
+PUID=1000
+PGID=1000
 ```
 
 Ohne `.env` wird automatisch der relative Ordner verwendet:
@@ -72,6 +76,8 @@ docker compose up -d
 ```
 
 Der Container speichert immer nach `/config/config.json`; nur die linke Seite des Volume-Mounts wird über `CONFIG_PATH` geändert.
+
+`PUID` und `PGID` bestimmen, welchem Host-Benutzer die Config-Dateien gehören. Die Standardwerte `99:100` entsprechen Unraid (`nobody:users`). Auf normalen Linux-Systemen ist für den ersten Benutzer häufig `1000:1000` passend. Das Startskript korrigiert die Rechte des gemounteten Config-Ordners automatisch und startet Node danach ohne Root-Rechte.
 
 ## Erster Login
 

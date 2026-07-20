@@ -10,3 +10,5 @@ services:
       - "${CONFIG_PATH:-./config}:/config"
     environment:
       TZ: "${TZ:-Europe/Berlin}"
+      PUID: "${PUID:-99}"
+      PGID: "${PGID:-100}"
