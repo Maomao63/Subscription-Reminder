@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { normalizeExpiry } = require('./lib/time');
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 const PORT = Number(process.env.PORT || 13000);
 const DATA_DIR = process.env.CONFIG_DIR || process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = process.env.CONFIG_FILE || path.join(DATA_DIR, 'config.json');

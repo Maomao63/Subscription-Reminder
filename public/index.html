@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111318">
   <title>Subtrack · Subscription Reminder</title>
-  <link rel="stylesheet" href="/styles.css?v=1.3.0">
+  <link rel="stylesheet" href="/styles.css?v=1.3.1">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -53,7 +53,7 @@
       <main class="content">
         <section id="dashboard-view" class="view active">
           <div class="hero glass">
-            <div><div class="hero-meta"><span class="eyebrow">YOUR OVERVIEW</span><span class="version-chip">Docker image · v1.3.0</span></div><h1>Welcome, <span id="greeting-name">Admin</span>.</h1><p>Everything important about your subscriptions at a glance.</p></div>
+            <div><div class="hero-meta"><span class="eyebrow">YOUR OVERVIEW</span><span class="version-chip">Docker image · v1.3.1</span></div><h1>Welcome, <span id="greeting-name">Admin</span>.</h1><p>Everything important about your subscriptions.</p></div>
             <button class="button primary" data-open-reminder><span>＋</span>Add reminder</button>
           </div>
 
@@ -101,9 +101,9 @@
 
   <dialog id="category-dialog" class="modal small-modal"><form id="category-form" method="dialog" novalidate><div class="modal-head"><div><p class="eyebrow">ORGANIZATION</p><h2>New category</h2></div><button class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><label>Name<input id="category-name" placeholder="e.g. Insurance" maxlength="30"></label><label>Accent color<input id="category-color" type="color" value="#8b5cf6"></label><div id="category-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><button class="button ghost" type="button" data-close-dialog>Cancel</button><button class="button primary" type="submit">Add category</button></div></form></dialog>
 
-  <dialog id="password-dialog" class="modal small-modal"><div id="password-form" class="dialog-form"><div class="modal-head"><div><p class="eyebrow">SECURITY</p><h2>Choose a secure password</h2></div><button id="password-close" class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><p class="modal-copy">Use at least 10 characters including uppercase, lowercase and a number.</p><label>Current password<input id="current-password" type="password" autocomplete="current-password"></label><label>New password<input id="new-password" type="password" autocomplete="new-password"></label><label>Confirm new password<input id="confirm-password" type="password" autocomplete="new-password"></label><div id="password-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><span class="build-version">Build 1.3.0</span><button class="button ghost password-cancel" type="button" data-close-dialog>Later</button><button class="button primary" id="password-submit" type="button">Save password</button></div></div></dialog>
+  <dialog id="password-dialog" class="modal small-modal"><div id="password-form" class="dialog-form"><div class="modal-head"><div><p class="eyebrow">SECURITY</p><h2>Choose a secure password</h2></div><button id="password-close" class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><p class="modal-copy">Use at least 10 characters including uppercase, lowercase and a number.</p><label>Current password<input id="current-password" type="password" autocomplete="current-password"></label><label>New password<input id="new-password" type="password" autocomplete="new-password"></label><label>Confirm new password<input id="confirm-password" type="password" autocomplete="new-password"></label><div id="password-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><span class="build-version">Build 1.3.1</span><button class="button ghost password-cancel" type="button" data-close-dialog>Later</button><button class="button primary" id="password-submit" type="button">Save password</button></div></div></dialog>
 
   <div id="toast-region" class="toast-region hidden" aria-live="polite"></div>
-  <script src="/app.js?v=1.3.0" defer></script>
+  <script src="/app.js?v=1.3.1" defer></script>
 </body>
 </html>
