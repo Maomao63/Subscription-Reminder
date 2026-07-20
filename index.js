@@ -3,9 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const PORT = Number(process.env.PORT || 3000);
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'subscriptions.json');
+const PORT = Number(process.env.PORT || 13000);
+const DATA_DIR = process.env.CONFIG_DIR || process.env.DATA_DIR || path.join(__dirname, 'data');
+const DATA_FILE = process.env.CONFIG_FILE || path.join(DATA_DIR, 'config.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const sessions = new Map();
@@ -147,6 +147,10 @@ async function processDiscordReminders() {
 }
 
 async function api(req, res, pathname) {
+  if (pathname === '/api/health' && req.method === 'GET') {
+    return json(res, 200, { status: 'ok' });
+  }
+
   if (pathname === '/api/setup-status' && req.method === 'GET') {
     return json(res, 200, { configured: Boolean(db.user) });
   }

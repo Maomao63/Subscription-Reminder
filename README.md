@@ -1,42 +1,93 @@
-# Subtrack
+# Subscription Reminder · Subtrack
 
 Ein selbst gehosteter Subscription-Reminder mit moderner Graphit-Oberfläche, Kategorien, Discord-Webhooks und nativen Browser-Benachrichtigungen.
 
-## Start mit Docker Compose
+## Unraid – direkt als fertiges Image starten
+
+Das Image wird bei jedem Push automatisch für `amd64` und `arm64` gebaut und in der GitHub Container Registry veröffentlicht.
 
 ```bash
-docker compose up -d --build
+docker run -d \
+  --name subscription-reminder \
+  -p 13000:13000 \
+  -v /mnt/user/appdata/subscription-reminder:/config \
+  --restart unless-stopped \
+  ghcr.io/maomao63/subscription-reminder:latest
 ```
 
-Danach `http://localhost:3000` öffnen. Beim ersten Start einen Benutzernamen wählen, anschließend mit dem Startpasswort `admin` anmelden. Subtrack verlangt direkt ein neues sicheres Passwort.
+Danach `http://UNRAID-IP:13000` öffnen.
 
-Die Daten liegen im Docker-Volume `subtrack-data` und bleiben bei Container-Updates erhalten.
+Alle Einstellungen befinden sich gemeinsam in:
 
-## Als Docker-Image bauen
+```text
+/mnt/user/appdata/subscription-reminder/config.json
+```
+
+Die Datei enthält den Benutzer, den sicheren Passwort-Hash, Kategorien, Reminder, Benachrichtigungsstatus und den Discord-Webhook. Sie sollte deshalb nicht öffentlich geteilt werden.
+
+## Docker Compose – Unraid
 
 ```bash
-docker build -t deinname/subtrack:latest .
-docker run -d --name subtrack -p 3000:3000 -v subtrack-data:/app/data --restart unless-stopped deinname/subtrack:latest
+docker compose pull
+docker compose up -d
 ```
 
-Zum Veröffentlichen in Docker Hub:
+Die mitgelieferte `docker-compose.yml` verwendet standardmäßig:
+
+- Image: `ghcr.io/maomao63/subscription-reminder:latest`
+- Port: `13000:13000`
+- Config-Pfad: `/mnt/user/appdata/subscription-reminder`
+
+## Andere Linux-Server
+
+Der Speicherort ist frei wählbar. Lege neben der Compose-Datei eine `.env` an:
+
+```env
+CONFIG_PATH=/opt/subscription-reminder
+HOST_PORT=13000
+```
+
+Alternativ kann ein relativer Ordner verwendet werden:
+
+```env
+CONFIG_PATH=./data
+```
+
+Anschließend:
 
 ```bash
-docker login
-docker push deinname/subtrack:latest
+mkdir -p /opt/subscription-reminder
+sudo chown -R 1000:1000 /opt/subscription-reminder
+docker compose pull
+docker compose up -d
 ```
+
+Der Container speichert immer nach `/config/config.json`; nur die linke Seite des Volume-Mounts wird über `CONFIG_PATH` geändert.
+
+## Erster Login
+
+Beim ersten Start einen Benutzernamen wählen und anschließend mit dem Startpasswort `admin` anmelden. Subtrack verlangt direkt ein neues sicheres Passwort.
 
 ## Benachrichtigungen
 
-- **Discord:** In den Einstellungen eine Discord-Webhook-URL eintragen und mit „Test senden“ prüfen. Der Server prüft fällige Reminder jede Minute, auch wenn das Web-UI geschlossen ist.
-- **Browser/Windows:** Berechtigung in den Einstellungen aktivieren. Browser-Pop-ups werden getrennt von Discord konfiguriert und erscheinen, solange Subtrack in einem Browser-Tab geöffnet ist. Außer auf `localhost` benötigen Browser-Benachrichtigungen eine HTTPS-Verbindung.
+- **Discord:** In den Einstellungen eine Discord-Webhook-URL eintragen und mit „Test senden“ prüfen. Der Server kontrolliert fällige Reminder jede Minute, auch wenn das Web-UI geschlossen ist.
+- **Browser/Windows:** Berechtigung in den Einstellungen aktivieren. Browser-Pop-ups funktionieren unabhängig von Discord und erscheinen, solange Subtrack in einem Browser-Tab geöffnet ist. Außer auf `localhost` benötigen Browser-Benachrichtigungen HTTPS.
+
+## Image aktualisieren
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Da `/config` als Host-Verzeichnis eingebunden ist, bleiben alle Daten bei Updates und Container-Neuerstellungen erhalten.
 
 ## Lokale Entwicklung
 
-Node.js 20 oder neuer wird benötigt. Es gibt keine externen Laufzeit-Abhängigkeiten.
+Node.js 20 oder neuer wird benötigt. Externe Laufzeit-Abhängigkeiten gibt es nicht.
 
 ```bash
 npm start
 ```
 
-Optional können `PORT` und `DATA_DIR` als Umgebungsvariablen gesetzt werden.
+Optional stehen `PORT`, `CONFIG_DIR` und `CONFIG_FILE` als Umgebungsvariablen zur Verfügung.

@@ -1,13 +1,12 @@
 services:
-  subtrack:
-    build: .
-    image: subtrack:latest
-    container_name: subtrack
+  subscription-reminder:
+    image: ${SUBSCRIPTION_REMINDER_IMAGE:-ghcr.io/maomao63/subscription-reminder:latest}
+    container_name: subscription-reminder
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${HOST_PORT:-13000}:13000"
+    environment:
+      PORT: "13000"
+      CONFIG_DIR: /config
     volumes:
-      - subtrack-data:/app/data
-
-volumes:
-  subtrack-data:
+      - "${CONFIG_PATH:-/mnt/user/appdata/subscription-reminder}:/config"
