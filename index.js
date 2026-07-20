@@ -2,8 +2,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { normalizeExpiry } = require('./lib/time');
 
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.3.0';
 const PORT = Number(process.env.PORT || 13000);
 const DATA_DIR = process.env.CONFIG_DIR || process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = process.env.CONFIG_FILE || path.join(DATA_DIR, 'config.json');
@@ -126,6 +127,12 @@ function publicState(current) {
   };
 }
 
+function expiryInput(input) {
+  const expiry = normalizeExpiry(input);
+  if (!expiry) return null;
+  return expiry;
+}
+
 function validPassword(value) {
   return typeof value === 'string' && value.length >= 10 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value);
 }
@@ -144,7 +151,9 @@ async function sendDiscord(reminder, kind = 'initial') {
   const webhook = db.settings.discordWebhook;
   if (!webhook) throw new Error('No Discord webhook configured.');
   const category = db.categories.find(item => item.id === reminder.categoryId);
-  const date = new Date(`${reminder.expiresAt}T12:00:00`).toLocaleDateString('en-GB', { dateStyle: 'long' });
+  const date = reminder.expiresAtUtc
+    ? new Date(reminder.expiresAtUtc).toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short', timeZone: reminder.timeZone }) + ` (${reminder.timeZone})`
+    : new Date(`${reminder.expiresAt}T12:00:00`).toLocaleDateString('en-GB', { dateStyle: 'long' });
   const days = kind === 'final' ? 1 : Math.max(0, Number(reminder.remindDays) || 0);
   const dayLabel = `${days} ${days === 1 ? 'day' : 'days'} left`;
   const isConnectionTest = kind === 'connection-test';
@@ -166,7 +175,10 @@ async function sendDiscord(reminder, kind = 'initial') {
 }
 
 function reminderDue(reminder, days = Number(reminder.remindDays) || 0) {
-  const due = new Date(`${reminder.expiresAt}T09:00:00`).getTime() - days * 86400000;
+  const expiry = reminder.expiresAtUtc
+    ? new Date(reminder.expiresAtUtc).getTime()
+    : new Date(`${reminder.expiresAt}T09:00:00`).getTime();
+  const due = expiry - days * 86400000;
   return Date.now() >= due;
 }
 
@@ -268,10 +280,11 @@ async function api(req, res, pathname) {
   if (pathname === '/api/reminders' && req.method === 'POST') {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req);
-    if (!String(input.name || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name and expiration date are required.' });
+    const expiry = expiryInput(input);
+    if (!String(input.name || '').trim() || !expiry) return json(res, 400, { error: 'Name, expiration date, time and a valid timezone are required.' });
     if (input.categoryId && !db.categories.some(item => item.id === input.categoryId)) return json(res, 400, { error: 'Unknown category.' });
     const reminder = {
-      id: crypto.randomUUID(), name: String(input.name).trim().slice(0, 80), expiresAt: input.expiresAt,
+      id: crypto.randomUUID(), name: String(input.name).trim().slice(0, 80), ...expiry,
       categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)),
       discord: Boolean(input.discord), browser: Boolean(input.browser), createdAt: new Date().toISOString(),
       discordInitialNotifiedAt: null, discordFinalNotifiedAt: null, browserNotifiedAt: null
@@ -283,8 +296,9 @@ async function api(req, res, pathname) {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req);
     const name = String(input.name || '').trim();
-    if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name and expiration date are required for the Discord test.' });
-    const preview = { name: name.slice(0, 80), expiresAt: input.expiresAt, categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)) };
+    const expiry = expiryInput(input);
+    if (!name || !expiry) return json(res, 400, { error: 'Name, expiration date, time and timezone are required for the Discord test.' });
+    const preview = { name: name.slice(0, 80), ...expiry, categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)) };
     try {
       await sendDiscord(preview, 'preview');
       const days = preview.remindDays;
@@ -298,8 +312,9 @@ async function api(req, res, pathname) {
     const reminder = db.reminders.find(item => item.id === reminderMatch[1]);
     if (!reminder) return json(res, 404, { error: 'Reminder not found.' });
     const input = await body(req);
-    if (!String(input.name || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name and expiration date are required.' });
-    Object.assign(reminder, { name: String(input.name).trim().slice(0, 80), expiresAt: input.expiresAt, categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)), discord: Boolean(input.discord), browser: Boolean(input.browser), discordInitialNotifiedAt: null, discordFinalNotifiedAt: null, browserNotifiedAt: null });
+    const expiry = expiryInput(input);
+    if (!String(input.name || '').trim() || !expiry) return json(res, 400, { error: 'Name, expiration date, time and a valid timezone are required.' });
+    Object.assign(reminder, { name: String(input.name).trim().slice(0, 80), ...expiry, categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)), discord: Boolean(input.discord), browser: Boolean(input.browser), discordInitialNotifiedAt: null, discordFinalNotifiedAt: null, browserNotifiedAt: null });
     save(); return json(res, 200, reminder);
   }
   if (reminderMatch && req.method === 'DELETE') {

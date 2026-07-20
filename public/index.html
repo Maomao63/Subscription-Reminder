@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111318">
   <title>Subtrack · Subscription Reminder</title>
-  <link rel="stylesheet" href="/styles.css?v=1.2.1">
+  <link rel="stylesheet" href="/styles.css?v=1.3.0">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -53,7 +53,7 @@
       <main class="content">
         <section id="dashboard-view" class="view active">
           <div class="hero glass">
-            <div><div class="hero-meta"><span class="eyebrow">YOUR OVERVIEW</span><span class="version-chip">Docker image · v1.2.1</span></div><h1>Welcome, <span id="greeting-name">Admin</span>.</h1><p>Everything important about your subscriptions at a glance.</p></div>
+            <div><div class="hero-meta"><span class="eyebrow">YOUR OVERVIEW</span><span class="version-chip">Docker image · v1.3.0</span></div><h1>Welcome, <span id="greeting-name">Admin</span>.</h1><p>Everything important about your subscriptions at a glance.</p></div>
             <button class="button primary" data-open-reminder><span>＋</span>Add reminder</button>
           </div>
 
@@ -90,18 +90,20 @@
       <div class="modal-head"><div><p class="eyebrow">SUBSCRIPTION</p><h2 id="reminder-dialog-title">Add reminder</h2></div><button class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div>
       <input id="reminder-id" type="hidden">
       <label>Subscription name<input id="reminder-name" placeholder="e.g. Spotify Premium" required maxlength="80"></label>
-      <div class="form-grid"><label>Expiration date<input id="reminder-date" type="date" required></label><label>Category<select id="reminder-category"></select></label></div>
+      <div class="form-grid"><label>Expiration date<input id="reminder-date" type="date" required></label><label>Expiration time<input id="reminder-time" type="time" value="23:59" required></label></div>
+      <div class="form-grid"><label>Timezone<select id="reminder-timezone" required></select></label><label>Category<select id="reminder-category"></select></label></div>
       <label>Remind me in advance<div class="range-row"><input id="reminder-days" type="range" min="0" max="30" value="7"><output id="days-output">7 days</output></div></label>
       <div class="toggle-list"><label class="toggle-row"><span><b>Discord notification</b><small>Notify through your webhook</small></span><input id="reminder-discord" type="checkbox"><i></i></label><label class="toggle-row"><span><b>Browser pop-up</b><small>Native Windows notification</small></span><input id="reminder-browser" type="checkbox"><i></i></label></div><div id="reminder-discord-test" class="notification-test hidden"><div><b>Test this Discord reminder</b><small>Sends the current name and selected lead time without mentioning your final-alert target.</small></div><button id="test-reminder-discord" class="button secondary" type="button">Send test</button></div><div id="reminder-test-result" class="inline-result hidden" role="status"></div>
+      <p class="field-help">Use the timezone shown by the provider. If none is shown, it usually means your local timezone.</p>
       <div id="reminder-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><button class="button ghost" type="button" data-close-dialog>Cancel</button><button class="button primary" id="save-reminder" type="submit">Save reminder</button></div>
     </form>
   </dialog>
 
   <dialog id="category-dialog" class="modal small-modal"><form id="category-form" method="dialog" novalidate><div class="modal-head"><div><p class="eyebrow">ORGANIZATION</p><h2>New category</h2></div><button class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><label>Name<input id="category-name" placeholder="e.g. Insurance" maxlength="30"></label><label>Accent color<input id="category-color" type="color" value="#8b5cf6"></label><div id="category-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><button class="button ghost" type="button" data-close-dialog>Cancel</button><button class="button primary" type="submit">Add category</button></div></form></dialog>
 
-  <dialog id="password-dialog" class="modal small-modal"><div id="password-form" class="dialog-form"><div class="modal-head"><div><p class="eyebrow">SECURITY</p><h2>Choose a secure password</h2></div><button id="password-close" class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><p class="modal-copy">Use at least 10 characters including uppercase, lowercase and a number.</p><label>Current password<input id="current-password" type="password" autocomplete="current-password"></label><label>New password<input id="new-password" type="password" autocomplete="new-password"></label><label>Confirm new password<input id="confirm-password" type="password" autocomplete="new-password"></label><div id="password-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><span class="build-version">Build 1.2.1</span><button class="button ghost password-cancel" type="button" data-close-dialog>Later</button><button class="button primary" id="password-submit" type="button">Save password</button></div></div></dialog>
+  <dialog id="password-dialog" class="modal small-modal"><div id="password-form" class="dialog-form"><div class="modal-head"><div><p class="eyebrow">SECURITY</p><h2>Choose a secure password</h2></div><button id="password-close" class="close-button" type="button" data-close-dialog aria-label="Close">×</button></div><p class="modal-copy">Use at least 10 characters including uppercase, lowercase and a number.</p><label>Current password<input id="current-password" type="password" autocomplete="current-password"></label><label>New password<input id="new-password" type="password" autocomplete="new-password"></label><label>Confirm new password<input id="confirm-password" type="password" autocomplete="new-password"></label><div id="password-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><span class="build-version">Build 1.3.0</span><button class="button ghost password-cancel" type="button" data-close-dialog>Later</button><button class="button primary" id="password-submit" type="button">Save password</button></div></div></dialog>
 
   <div id="toast-region" class="toast-region hidden" aria-live="polite"></div>
-  <script src="/app.js?v=1.2.1" defer></script>
+  <script src="/app.js?v=1.3.0" defer></script>
 </body>
 </html>

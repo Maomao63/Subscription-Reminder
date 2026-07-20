@@ -15,7 +15,7 @@ Subtrack is a lightweight, self-hosted subscription reminder with a modern dark 
 - Modern responsive graphite dashboard
 - Local administrator account with a mandatory password change after first sign-in
 - Custom categories with individual accent colors
-- Configurable expiration dates and reminder lead times
+- Configurable expiration dates, exact times, IANA timezones, and reminder lead times
 - Independent Discord and browser notification switches for every subscription
 - Discord webhook connection test
 - Per-reminder Discord preview without pinging the emergency target
@@ -142,6 +142,7 @@ Select **Add reminder**, then configure:
 
 - Subscription name
 - Expiration date
+- Expiration time and provider timezone (for example `Europe/Berlin` or `UTC`)
 - Category
 - Initial reminder lead time
 - Discord notification toggle

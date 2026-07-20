@@ -48,14 +48,56 @@ function clearFormError(id) {
   element.classList.add('hidden');
 }
 
-function daysUntil(date) {
-  const target = new Date(`${date}T23:59:59`);
+function reminderTimestamp(reminder) {
+  return reminder.expiresAtUtc ? Date.parse(reminder.expiresAtUtc) : new Date(`${reminder.expiresAt}T23:59:59`).getTime();
+}
+
+function daysUntil(reminder) {
+  const target = reminderTimestamp(reminder);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   return Math.ceil((target - today) / 86400000);
 }
 
-function formatDate(date) {
-  return new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+function formatDate(reminder) {
+  if (reminder.expiresAtUtc) {
+    return `${new Date(reminder.expiresAtUtc).toLocaleString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: reminder.timeZone
+    })} (${reminder.timeZone})`;
+  }
+  return new Date(`${reminder.expiresAt}T12:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function countdownText(reminder) {
+  const difference = reminderTimestamp(reminder) - Date.now();
+  if (difference <= 0) {
+    const days = Math.floor(Math.abs(difference) / 86400000);
+    return days === 0 ? 'Expired today' : `Expired ${days} ${days === 1 ? 'day' : 'days'} ago`;
+  }
+  if (!reminder.expiresAtUtc) {
+    const days = daysUntil(reminder);
+    return days === 0 ? 'Expires today' : `${days} ${days === 1 ? 'day' : 'days'} left`;
+  }
+  const days = Math.floor(difference / 86400000);
+  const hours = Math.floor((difference % 86400000) / 3600000);
+  if (days === 0 && hours === 0) return 'Less than 1 hour left';
+  const parts = [];
+  if (days) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+  if (hours || !days) parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+  return `${parts.join(' ')} left`;
+}
+
+function localDateValue(date) {
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function configureTimeZones(selected) {
+  const select = $('#reminder-timezone');
+  const local = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const supported = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
+  const zones = [...new Set([local, 'UTC', ...supported])];
+  select.innerHTML = zones.map(zone => `<option value="${escapeHtml(zone)}">${escapeHtml(zone)}${zone === local ? ' (local)' : ''}</option>`).join('');
+  select.value = zones.includes(selected) ? selected : local;
 }
 
 async function init() {
@@ -113,7 +155,7 @@ function renderAll() {
 }
 
 function renderStats() {
-  const soon = state.reminders.filter(item => daysUntil(item.expiresAt) <= 30 && daysUntil(item.expiresAt) >= 0).length;
+  const soon = state.reminders.filter(item => daysUntil(item) <= 30 && daysUntil(item) >= 0).length;
   const anyDiscord = state.reminders.some(item => item.discord) && state.settings.discordConfigured;
   const anyBrowser = state.reminders.some(item => item.browser) && 'Notification' in window && Notification.permission === 'granted';
   $('#stat-active').textContent = state.reminders.length;
@@ -124,17 +166,16 @@ function renderStats() {
 
 function renderReminders() {
   const reminders = [...state.reminders]
-    .filter(item => filter === 'all' || (daysUntil(item.expiresAt) <= 30 && daysUntil(item.expiresAt) >= 0))
-    .sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
+    .filter(item => filter === 'all' || (daysUntil(item) <= 30 && daysUntil(item) >= 0))
+    .sort((a, b) => reminderTimestamp(a) - reminderTimestamp(b));
   $('#empty-state').classList.toggle('hidden', state.reminders.length > 0);
   $('#reminder-grid').classList.toggle('hidden', state.reminders.length === 0);
   $('#reminder-grid').innerHTML = reminders.map(reminder => {
     const category = state.categories.find(item => item.id === reminder.categoryId) || { name: 'No category', color: '#64748b' };
-    const days = daysUntil(reminder.expiresAt);
-    const dayText = days < 0 ? `Expired ${Math.abs(days)} ${Math.abs(days) === 1 ? 'day' : 'days'} ago` : days === 0 ? 'Expires today' : `${days} ${days === 1 ? 'day' : 'days'} left`;
+    const dayText = countdownText(reminder);
     return `<article class="reminder-card" style="--accent:${category.color}">
       <div class="card-top"><div class="service-icon">${escapeHtml(reminder.name.charAt(0))}</div><div class="card-menu"><button class="menu-button" data-menu="${reminder.id}" aria-label="Actions">•••</button><div class="card-menu-items"><button data-edit="${reminder.id}">Edit</button><button class="delete" data-delete="${reminder.id}">Delete</button></div></div></div>
-      <span class="category-pill"><i></i>${escapeHtml(category.name)}</span><h3>${escapeHtml(reminder.name)}</h3><p class="expiry">Expires on <strong>${formatDate(reminder.expiresAt)}</strong></p>
+      <span class="category-pill"><i></i>${escapeHtml(category.name)}</span><h3>${escapeHtml(reminder.name)}</h3><p class="expiry">Expires on <strong>${escapeHtml(formatDate(reminder))}</strong></p>
       <div class="countdown"><span class="days-left">Status<b>${dayText}</b></span><div class="channel-icons"><span class="${reminder.discord ? 'on' : ''}" title="Discord" aria-label="Discord ${reminder.discord ? 'enabled' : 'disabled'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8a12 12 0 0 1 8 0l2 8a14 14 0 0 1-3 1.5L13.5 16h-3L9 17.5A14 14 0 0 1 6 16z"/><circle cx="9.5" cy="12.5" r="1"/><circle cx="14.5" cy="12.5" r="1"/></svg></span><span class="${reminder.browser ? 'on' : ''}" title="Browser" aria-label="Browser ${reminder.browser ? 'enabled' : 'disabled'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span></div></div>
     </article>`;
   }).join('');
@@ -196,7 +237,9 @@ function openReminder(reminder = null) {
   $('#reminder-id').value = reminder?.id || '';
   $('#reminder-dialog-title').textContent = reminder ? 'Edit reminder' : 'Add reminder';
   $('#reminder-name').value = reminder?.name || '';
-  $('#reminder-date').value = reminder?.expiresAt || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  $('#reminder-date').value = reminder?.expiresAt || localDateValue(new Date(Date.now() + 30 * 86400000));
+  $('#reminder-time').value = reminder?.expiresTime || '23:59';
+  configureTimeZones(reminder?.timeZone);
   $('#reminder-category').value = reminder?.categoryId || '';
   $('#reminder-days').value = reminder?.remindDays ?? 7;
   $('#reminder-discord').checked = reminder?.discord || false;
@@ -223,7 +266,7 @@ function clearReminderTestResult() {
 $$('[data-open-reminder]').forEach(button => button.addEventListener('click', () => openReminder()));
 $('#reminder-days').addEventListener('input', updateDaysOutput);
 $('#reminder-discord').addEventListener('change', () => { updateReminderDiscordTestVisibility(); clearReminderTestResult(); });
-['#reminder-name', '#reminder-date', '#reminder-days'].forEach(selector => $(selector).addEventListener('input', clearReminderTestResult));
+['#reminder-name', '#reminder-date', '#reminder-time', '#reminder-timezone', '#reminder-days'].forEach(selector => $(selector).addEventListener('input', clearReminderTestResult));
 $('#test-reminder-discord').addEventListener('click', async () => {
   const result = $('#reminder-test-result');
   if (!state.settings.discordConfigured) {
@@ -233,15 +276,17 @@ $('#test-reminder-discord').addEventListener('click', async () => {
   }
   const name = $('#reminder-name').value.trim();
   const expiresAt = $('#reminder-date').value;
-  if (!name || !expiresAt) {
-    result.textContent = 'Enter a subscription name and expiration date first.';
+  const expiresTime = $('#reminder-time').value;
+  const timeZone = $('#reminder-timezone').value;
+  if (!name || !expiresAt || !expiresTime || !timeZone) {
+    result.textContent = 'Enter a subscription name, expiration date, time and timezone first.';
     result.className = 'inline-result error';
     return;
   }
   const button = $('#test-reminder-discord');
   button.disabled = true; button.textContent = 'Sending…';
   try {
-    const response = await request('/api/reminders/discord-preview', { method: 'POST', body: JSON.stringify({ name, expiresAt, categoryId: $('#reminder-category').value, remindDays: Number($('#reminder-days').value) }) });
+    const response = await request('/api/reminders/discord-preview', { method: 'POST', body: JSON.stringify({ name, expiresAt, expiresTime, timeZone, categoryId: $('#reminder-category').value, remindDays: Number($('#reminder-days').value) }) });
     result.textContent = `Sent: ${response.title}`;
     result.className = 'inline-result success';
   } catch (error) {
@@ -253,9 +298,10 @@ $('#test-reminder-discord').addEventListener('click', async () => {
 $('#reminder-form').addEventListener('submit', async event => {
   event.preventDefault();
   const id = $('#reminder-id').value;
-  const payload = { name: $('#reminder-name').value, expiresAt: $('#reminder-date').value, categoryId: $('#reminder-category').value, remindDays: Number($('#reminder-days').value), discord: $('#reminder-discord').checked, browser: $('#reminder-browser').checked };
+  const payload = { name: $('#reminder-name').value, expiresAt: $('#reminder-date').value, expiresTime: $('#reminder-time').value, timeZone: $('#reminder-timezone').value, categoryId: $('#reminder-category').value, remindDays: Number($('#reminder-days').value), discord: $('#reminder-discord').checked, browser: $('#reminder-browser').checked };
   if (!payload.name.trim()) return showFormError('#reminder-error', 'Enter a subscription name.');
   if (!payload.expiresAt) return showFormError('#reminder-error', 'Choose an expiration date.');
+  if (!payload.expiresTime || !payload.timeZone) return showFormError('#reminder-error', 'Choose an expiration time and timezone.');
   try {
     const saved = await request(id ? `/api/reminders/${id}` : '/api/reminders', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
     if (id) state.reminders[state.reminders.findIndex(item => item.id === id)] = saved; else state.reminders.push(saved);
@@ -267,7 +313,7 @@ $('#reminder-form').addEventListener('submit', async event => {
     }
   } catch (error) { showFormError('#reminder-error', error.message); }
 });
-['#reminder-name', '#reminder-date'].forEach(selector => $(selector).addEventListener('input', () => clearFormError('#reminder-error')));
+['#reminder-name', '#reminder-date', '#reminder-time', '#reminder-timezone'].forEach(selector => $(selector).addEventListener('input', () => clearFormError('#reminder-error')));
 
 $('#reminder-grid').addEventListener('click', async event => {
   const menu = event.target.closest('[data-menu]');
@@ -377,7 +423,7 @@ async function checkBrowserNotifications() {
   try {
     const pending = await request('/api/browser-notifications');
     for (const reminder of pending) {
-      await browserNotification(`${reminder.name} expires soon`, `Expiration date: ${formatDate(reminder.expiresAt)}`);
+      await browserNotification(`${reminder.name} expires soon`, `Expiration date: ${formatDate(reminder)}`);
       await request(`/api/browser-notifications/${reminder.id}`, { method: 'POST' });
       const local = state.reminders.find(item => item.id === reminder.id); if (local) local.browserNotifiedAt = new Date().toISOString();
     }
