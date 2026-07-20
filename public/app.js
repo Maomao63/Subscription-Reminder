@@ -40,6 +40,18 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 }
 
+function showFormError(id, message) {
+  const element = $(id);
+  element.textContent = message;
+  element.classList.remove('hidden');
+}
+
+function clearFormError(id) {
+  const element = $(id);
+  element.textContent = '';
+  element.classList.add('hidden');
+}
+
 function daysUntil(date) {
   const target = new Date(`${date}T23:59:59`);
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -162,6 +174,7 @@ function updateBrowserStatus() {
 
 function openReminder(reminder = null) {
   $('#reminder-form').reset();
+  clearFormError('#reminder-error');
   $('#reminder-id').value = reminder?.id || '';
   $('#reminder-dialog-title').textContent = reminder ? 'Edit reminder' : 'Add reminder';
   $('#reminder-name').value = reminder?.name || '';
@@ -185,13 +198,16 @@ $('#reminder-form').addEventListener('submit', async event => {
   event.preventDefault();
   const id = $('#reminder-id').value;
   const payload = { name: $('#reminder-name').value, expiresAt: $('#reminder-date').value, categoryId: $('#reminder-category').value, remindDays: Number($('#reminder-days').value), discord: $('#reminder-discord').checked, browser: $('#reminder-browser').checked };
+  if (!payload.name.trim()) return showFormError('#reminder-error', 'Enter a subscription name.');
+  if (!payload.expiresAt) return showFormError('#reminder-error', 'Choose an expiration date.');
   try {
     const saved = await request(id ? `/api/reminders/${id}` : '/api/reminders', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
     if (id) state.reminders[state.reminders.findIndex(item => item.id === id)] = saved; else state.reminders.push(saved);
     reminderDialog.close(); renderAll(); toast(id ? 'Reminder updated.' : 'Reminder added.');
     if (payload.browser && 'Notification' in window && Notification.permission === 'default') toast('Enable browser pop-ups in Settings.', 'error');
-  } catch (error) { toast(error.message, 'error'); }
+  } catch (error) { showFormError('#reminder-error', error.message); }
 });
+['#reminder-name', '#reminder-date'].forEach(selector => $(selector).addEventListener('input', () => clearFormError('#reminder-error')));
 
 $('#reminder-grid').addEventListener('click', async event => {
   const menu = event.target.closest('[data-menu]');
@@ -205,12 +221,15 @@ $('#reminder-grid').addEventListener('click', async event => {
   }
 });
 
-$('#open-category').addEventListener('click', () => { $('#category-form').reset(); $('#category-color').value = '#8b5cf6'; categoryDialog.showModal(); });
+$('#open-category').addEventListener('click', () => { $('#category-form').reset(); clearFormError('#category-error'); $('#category-color').value = '#8b5cf6'; categoryDialog.showModal(); });
 $('#category-form').addEventListener('submit', async event => {
   event.preventDefault();
-  try { const category = await request('/api/categories', { method: 'POST', body: JSON.stringify({ name: $('#category-name').value, color: $('#category-color').value }) }); state.categories.push(category); categoryDialog.close(); renderAll(); toast('Category added.'); }
-  catch (error) { toast(error.message, 'error'); }
+  const name = $('#category-name').value.trim();
+  if (!name) return showFormError('#category-error', 'Enter a category name.');
+  try { const category = await request('/api/categories', { method: 'POST', body: JSON.stringify({ name, color: $('#category-color').value }) }); state.categories.push(category); categoryDialog.close(); renderAll(); toast('Category added.'); }
+  catch (error) { showFormError('#category-error', error.message); }
 });
+$('#category-name').addEventListener('input', () => clearFormError('#category-error'));
 $('#category-grid').addEventListener('click', async event => {
   const button = event.target.closest('[data-delete-category]');
   if (!button || !confirm('Delete this category?')) return;
@@ -220,13 +239,17 @@ $('#category-grid').addEventListener('click', async event => {
 
 $('#discord-form').addEventListener('submit', async event => {
   event.preventDefault();
-  try { const result = await request('/api/settings/discord', { method: 'PUT', body: JSON.stringify({ webhook: $('#discord-webhook').value }) }); state.settings.discordWebhook = $('#discord-webhook').value.trim(); state.settings.discordConfigured = result.configured; updateDiscordStatus(); renderStats(); toast('Discord settings saved.'); }
-  catch (error) { toast(error.message, 'error'); }
+  const webhook = $('#discord-webhook').value.trim();
+  if (!webhook) return showFormError('#discord-error', 'Enter a Discord webhook URL before saving.');
+  try { const result = await request('/api/settings/discord', { method: 'PUT', body: JSON.stringify({ webhook }) }); state.settings.discordWebhook = webhook; state.settings.discordConfigured = result.configured; updateDiscordStatus(); renderStats(); clearFormError('#discord-error'); toast('Discord settings saved.'); }
+  catch (error) { showFormError('#discord-error', error.message); }
 });
 $('#test-discord').addEventListener('click', async () => {
+  if (!state.settings.discordConfigured) return showFormError('#discord-error', 'Save a Discord webhook URL before sending a test.');
   try { await request('/api/settings/discord/test', { method: 'POST' }); toast('Test message sent to Discord.'); }
-  catch (error) { toast(error.message, 'error'); }
+  catch (error) { showFormError('#discord-error', error.message); }
 });
+$('#discord-webhook').addEventListener('input', () => clearFormError('#discord-error'));
 $('#toggle-webhook').addEventListener('click', () => { const input = $('#discord-webhook'); input.type = input.type === 'password' ? 'url' : 'password'; });
 
 async function browserNotification(title = 'Subtrack is ready', body = 'Browser notifications are working.') {
@@ -272,11 +295,9 @@ function openPassword(forced = false) {
 $('#open-password').addEventListener('click', () => openPassword(false));
 passwordDialog.addEventListener('cancel', event => { if (passwordDialog.dataset.forced === 'true') event.preventDefault(); });
 function showPasswordError(message) {
-  const error = $('#password-error');
-  error.textContent = message;
-  error.classList.remove('hidden');
+  showFormError('#password-error', message);
 }
-['#current-password', '#new-password', '#confirm-password'].forEach(selector => $(selector).addEventListener('input', () => $('#password-error').classList.add('hidden')));
+['#current-password', '#new-password', '#confirm-password'].forEach(selector => $(selector).addEventListener('input', () => clearFormError('#password-error')));
 let passwordSaving = false;
 async function savePassword() {
   if (passwordSaving) return;
@@ -307,6 +328,12 @@ async function savePassword() {
 }
 $('#password-submit').addEventListener('click', savePassword);
 $('#password-form').addEventListener('submit', event => { event.preventDefault(); savePassword(); });
+
+$$('[data-close-dialog]').forEach(button => button.addEventListener('click', () => {
+  const dialog = button.closest('dialog');
+  if (dialog === passwordDialog && passwordDialog.dataset.forced === 'true') return;
+  dialog?.close('cancel');
+}));
 
 $$('.nav-item[data-view]').forEach(button => button.addEventListener('click', () => {
   $$('.nav-item[data-view]').forEach(item => item.classList.toggle('active', item === button));

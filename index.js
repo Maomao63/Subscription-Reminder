@@ -264,7 +264,8 @@ async function api(req, res, pathname) {
   if (pathname === '/api/settings/discord' && req.method === 'PUT') {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req); const webhook = String(input.webhook || '').trim();
-    if (webhook && !/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(webhook)) return json(res, 400, { error: 'Enter a valid Discord webhook URL.' });
+    if (!webhook) return json(res, 400, { error: 'Discord webhook URL is required.' });
+    if (!/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(webhook)) return json(res, 400, { error: 'Enter a valid Discord webhook URL.' });
     db.settings.discordWebhook = webhook; save(); return json(res, 200, { configured: Boolean(webhook) });
   }
   if (pathname === '/api/settings/discord/test' && req.method === 'POST') {
