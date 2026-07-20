@@ -1,12 +1,12 @@
 services:
   subscription-reminder:
-    image: ${SUBSCRIPTION_REMINDER_IMAGE:-ghcr.io/maomao63/subscription-reminder:latest}
+    image: ghcr.io/maomao63/subscription-reminder:latest
+    pull_policy: always
     container_name: subscription-reminder
     restart: unless-stopped
     ports:
-      - "${HOST_PORT:-13000}:13000"
-    environment:
-      PORT: "13000"
-      CONFIG_DIR: /config
+      - "13000:13000"
     volumes:
-      - "${CONFIG_PATH:-/mnt/user/appdata/subscription-reminder}:/config"
+      - "${CONFIG_PATH:-./config}:/config"
+    environment:
+      TZ: "${TZ:-Europe/Berlin}"

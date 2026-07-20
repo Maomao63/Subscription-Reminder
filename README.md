@@ -36,7 +36,16 @@ Die mitgelieferte `docker-compose.yml` verwendet standardmäßig:
 
 - Image: `ghcr.io/maomao63/subscription-reminder:latest`
 - Port: `13000:13000`
-- Config-Pfad: `/mnt/user/appdata/subscription-reminder`
+- Config-Pfad: `./config`
+- Zeitzone: `Europe/Berlin`
+- Pull-Policy: `always`
+
+Für Unraid eine `.env` neben der Compose-Datei anlegen:
+
+```env
+CONFIG_PATH=/mnt/user/appdata/subscription-reminder
+TZ=Europe/Berlin
+```
 
 ## Andere Linux-Server
 
@@ -44,13 +53,13 @@ Der Speicherort ist frei wählbar. Lege neben der Compose-Datei eine `.env` an:
 
 ```env
 CONFIG_PATH=/opt/subscription-reminder
-HOST_PORT=13000
+TZ=Europe/Berlin
 ```
 
-Alternativ kann ein relativer Ordner verwendet werden:
+Ohne `.env` wird automatisch der relative Ordner verwendet:
 
 ```env
-CONFIG_PATH=./data
+CONFIG_PATH=./config
 ```
 
 Anschließend:
