@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+const APP_VERSION = '1.1.0';
 const PORT = Number(process.env.PORT || 13000);
 const DATA_DIR = process.env.CONFIG_DIR || process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = process.env.CONFIG_FILE || path.join(DATA_DIR, 'config.json');
@@ -63,7 +64,7 @@ async function verifyPassword(password, stored) {
 }
 
 function json(res, status, body, headers = {}) {
-  res.writeHead(status, { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-store', ...headers });
+  res.writeHead(status, { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-store', 'X-Subtrack-Version': APP_VERSION, ...headers });
   res.end(JSON.stringify(body));
 }
 
@@ -154,7 +155,7 @@ async function processDiscordReminders() {
 
 async function api(req, res, pathname) {
   if (pathname === '/api/health' && req.method === 'GET') {
-    return json(res, 200, { status: 'ok' });
+    return json(res, 200, { status: 'ok', version: APP_VERSION });
   }
 
   if (pathname === '/api/setup-status' && req.method === 'GET') {
@@ -197,11 +198,19 @@ async function api(req, res, pathname) {
   if (pathname === '/api/password' && req.method === 'PUT') {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req);
-    if (!(await verifyPassword(String(input.currentPassword || ''), db.user.passwordHash))) return json(res, 400, { error: 'The current password is incorrect.' });
-    if (!validPassword(input.newPassword)) return json(res, 400, { error: 'Use at least 10 characters including uppercase, lowercase and a number.' });
+    console.log(`[security] Password change requested for user "${db.user.username}".`);
+    if (!(await verifyPassword(String(input.currentPassword || ''), db.user.passwordHash))) {
+      console.warn(`[security] Password change rejected for user "${db.user.username}": current password is incorrect.`);
+      return json(res, 400, { error: 'The current password is incorrect.' });
+    }
+    if (!validPassword(input.newPassword)) {
+      console.warn(`[security] Password change rejected for user "${db.user.username}": new password does not meet the policy.`);
+      return json(res, 400, { error: 'Use at least 10 characters including uppercase, lowercase and a number.' });
+    }
     db.user.passwordHash = await hashPassword(input.newPassword);
     db.user.mustChangePassword = false;
     save();
+    console.log(`[security] Password changed successfully for user "${db.user.username}".`);
     return json(res, 200, { ok: true });
   }
 
@@ -284,8 +293,8 @@ function staticFile(req, res, pathname) {
   if (file !== publicRoot && !file.startsWith(`${publicRoot}${path.sep}`)) return json(res, 403, { error: 'Forbidden.' });
   fs.readFile(file, (error, content) => {
     if (error) { res.writeHead(404); return res.end('Not found'); }
-    const cache = ['.html', '.js', '.css'].includes(path.extname(file)) ? 'no-cache' : 'public, max-age=3600';
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': cache });
+    const cache = ['.html', '.js', '.css'].includes(path.extname(file)) ? 'no-store, no-cache, must-revalidate' : 'public, max-age=3600';
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': cache, 'X-Subtrack-Version': APP_VERSION });
     res.end(content);
   });
 }

@@ -327,7 +327,9 @@ async function checkBrowserNotifications() {
 }
 
 function openPassword(forced = false) {
-  $('#password-form').reset();
+  $('#current-password').value = '';
+  $('#new-password').value = '';
+  $('#confirm-password').value = '';
   $('#password-error').classList.add('hidden');
   $('#password-error').textContent = '';
   $('#current-password').placeholder = forced ? 'Initial password: admin' : '';
@@ -371,7 +373,6 @@ async function savePassword() {
   }
 }
 $('#password-submit').addEventListener('click', savePassword);
-$('#password-form').addEventListener('submit', event => { event.preventDefault(); savePassword(); });
 
 $$('[data-close-dialog]').forEach(button => button.addEventListener('click', () => {
   const dialog = button.closest('dialog');
