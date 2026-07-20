@@ -22,7 +22,7 @@ function initialData() {
     categories: [
       { id: crypto.randomUUID(), name: 'Streaming', color: '#8b5cf6' },
       { id: crypto.randomUUID(), name: 'Software', color: '#22c55e' },
-      { id: crypto.randomUUID(), name: 'Sonstiges', color: '#38bdf8' }
+      { id: crypto.randomUUID(), name: 'Other', color: '#38bdf8' }
     ],
     reminders: [],
     settings: { discordWebhook: '' }
@@ -33,6 +33,12 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 let db;
 try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
 catch { db = initialData(); save(); }
+
+let migrated = false;
+for (const category of db.categories || []) {
+  if (category.name === 'Sonstiges') { category.name = 'Other'; migrated = true; }
+}
+if (migrated) save();
 
 function save() {
   const tmp = `${DATA_FILE}.tmp`;
@@ -92,9 +98,9 @@ function session(req) {
 
 function requireAuth(req, res, mutating = false) {
   const current = session(req);
-  if (!current) { json(res, 401, { error: 'Bitte erneut anmelden.' }); return null; }
+  if (!current) { json(res, 401, { error: 'Please sign in again.' }); return null; }
   if (mutating && req.headers['x-csrf-token'] !== current.csrf) {
-    json(res, 403, { error: 'Ungültige Sitzung.' }); return null;
+    json(res, 403, { error: 'Invalid session.' }); return null;
   }
   return current;
 }
@@ -115,21 +121,21 @@ function validPassword(value) {
 
 async function sendDiscord(reminder, test = false) {
   const webhook = db.settings.discordWebhook;
-  if (!webhook) throw new Error('Kein Discord-Webhook konfiguriert.');
+  if (!webhook) throw new Error('No Discord webhook configured.');
   const category = db.categories.find(item => item.id === reminder.categoryId);
-  const date = new Date(`${reminder.expiresAt}T12:00:00`).toLocaleDateString('de-DE', { dateStyle: 'long' });
+  const date = new Date(`${reminder.expiresAt}T12:00:00`).toLocaleDateString('en-GB', { dateStyle: 'long' });
   const payload = {
     username: 'Subtrack',
     embeds: [{
-      title: test ? 'Testbenachrichtigung erfolgreich' : `${reminder.name} läuft bald ab`,
-      description: test ? 'Deine Discord-Verbindung funktioniert.' : `Dein Abonnement **${reminder.name}** läuft am **${date}** ab.`,
+      title: test ? 'Test notification successful' : `${reminder.name} expires soon`,
+      description: test ? 'Your Discord connection is working.' : `Your **${reminder.name}** subscription expires on **${date}**.`,
       color: 0x8b5cf6,
-      fields: category ? [{ name: 'Kategorie', value: category.name, inline: true }] : [],
+      fields: category ? [{ name: 'Category', value: category.name, inline: true }] : [],
       footer: { text: 'Subtrack · Subscription Reminder' }, timestamp: new Date().toISOString()
     }]
   };
   const response = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  if (!response.ok) throw new Error(`Discord antwortet mit Status ${response.status}.`);
+  if (!response.ok) throw new Error(`Discord returned status ${response.status}.`);
 }
 
 function reminderDue(reminder) {
@@ -156,20 +162,20 @@ async function api(req, res, pathname) {
   }
 
   if (pathname === '/api/setup' && req.method === 'POST') {
-    if (db.user) return json(res, 409, { error: 'Die App ist bereits eingerichtet.' });
+    if (db.user) return json(res, 409, { error: 'The app is already configured.' });
     const input = await body(req);
     const username = String(input.username || '').trim();
-    if (username.length < 2 || username.length > 40) return json(res, 400, { error: 'Der Name muss 2–40 Zeichen lang sein.' });
+    if (username.length < 2 || username.length > 40) return json(res, 400, { error: 'The username must be between 2 and 40 characters.' });
     db.user = { username, passwordHash: await hashPassword('admin'), mustChangePassword: true };
     save();
     return json(res, 201, { ok: true });
   }
 
   if (pathname === '/api/login' && req.method === 'POST') {
-    if (!db.user) return json(res, 409, { error: 'Bitte richte die App zuerst ein.' });
+    if (!db.user) return json(res, 409, { error: 'Please create an admin account first.' });
     const input = await body(req);
     if (String(input.username || '').trim() !== db.user.username || !(await verifyPassword(String(input.password || ''), db.user.passwordHash))) {
-      return json(res, 401, { error: 'Name oder Passwort ist falsch.' });
+      return json(res, 401, { error: 'Incorrect username or password.' });
     }
     const id = crypto.randomBytes(32).toString('hex');
     const current = { csrf: crypto.randomBytes(24).toString('hex'), expires: Date.now() + SESSION_MAX_AGE };
@@ -191,8 +197,8 @@ async function api(req, res, pathname) {
   if (pathname === '/api/password' && req.method === 'PUT') {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req);
-    if (!(await verifyPassword(String(input.currentPassword || ''), db.user.passwordHash))) return json(res, 400, { error: 'Das aktuelle Passwort ist falsch.' });
-    if (!validPassword(input.newPassword)) return json(res, 400, { error: 'Mindestens 10 Zeichen sowie Groß-, Kleinbuchstaben und eine Zahl verwenden.' });
+    if (!(await verifyPassword(String(input.currentPassword || ''), db.user.passwordHash))) return json(res, 400, { error: 'The current password is incorrect.' });
+    if (!validPassword(input.newPassword)) return json(res, 400, { error: 'Use at least 10 characters including uppercase, lowercase and a number.' });
     db.user.passwordHash = await hashPassword(input.newPassword);
     db.user.mustChangePassword = false;
     save();
@@ -202,7 +208,7 @@ async function api(req, res, pathname) {
   if (pathname === '/api/categories' && req.method === 'POST') {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req); const name = String(input.name || '').trim();
-    if (!name || name.length > 30) return json(res, 400, { error: 'Bitte einen gültigen Kategorienamen eingeben.' });
+    if (!name || name.length > 30) return json(res, 400, { error: 'Enter a valid category name.' });
     const category = { id: crypto.randomUUID(), name, color: /^#[0-9a-f]{6}$/i.test(input.color) ? input.color : '#8b5cf6' };
     db.categories.push(category); save(); return json(res, 201, category);
   }
@@ -210,15 +216,15 @@ async function api(req, res, pathname) {
   const categoryMatch = pathname.match(/^\/api\/categories\/([\w-]+)$/);
   if (categoryMatch && req.method === 'DELETE') {
     const current = requireAuth(req, res, true); if (!current) return;
-    if (db.reminders.some(item => item.categoryId === categoryMatch[1])) return json(res, 409, { error: 'Die Kategorie wird noch von einem Reminder verwendet.' });
+    if (db.reminders.some(item => item.categoryId === categoryMatch[1])) return json(res, 409, { error: 'This category is still used by a reminder.' });
     db.categories = db.categories.filter(item => item.id !== categoryMatch[1]); save(); return json(res, 200, { ok: true });
   }
 
   if (pathname === '/api/reminders' && req.method === 'POST') {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req);
-    if (!String(input.name || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name und Ablaufdatum sind erforderlich.' });
-    if (input.categoryId && !db.categories.some(item => item.id === input.categoryId)) return json(res, 400, { error: 'Unbekannte Kategorie.' });
+    if (!String(input.name || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name and expiration date are required.' });
+    if (input.categoryId && !db.categories.some(item => item.id === input.categoryId)) return json(res, 400, { error: 'Unknown category.' });
     const reminder = {
       id: crypto.randomUUID(), name: String(input.name).trim().slice(0, 80), expiresAt: input.expiresAt,
       categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)),
@@ -232,9 +238,9 @@ async function api(req, res, pathname) {
   if (reminderMatch && req.method === 'PUT') {
     const current = requireAuth(req, res, true); if (!current) return;
     const reminder = db.reminders.find(item => item.id === reminderMatch[1]);
-    if (!reminder) return json(res, 404, { error: 'Reminder nicht gefunden.' });
+    if (!reminder) return json(res, 404, { error: 'Reminder not found.' });
     const input = await body(req);
-    if (!String(input.name || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name und Ablaufdatum sind erforderlich.' });
+    if (!String(input.name || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt)) return json(res, 400, { error: 'Name and expiration date are required.' });
     Object.assign(reminder, { name: String(input.name).trim().slice(0, 80), expiresAt: input.expiresAt, categoryId: input.categoryId || '', remindDays: Math.max(0, Math.min(365, Number(input.remindDays) || 0)), discord: Boolean(input.discord), browser: Boolean(input.browser), discordNotifiedAt: null, browserNotifiedAt: null });
     save(); return json(res, 200, reminder);
   }
@@ -258,7 +264,7 @@ async function api(req, res, pathname) {
   if (pathname === '/api/settings/discord' && req.method === 'PUT') {
     const current = requireAuth(req, res, true); if (!current) return;
     const input = await body(req); const webhook = String(input.webhook || '').trim();
-    if (webhook && !/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(webhook)) return json(res, 400, { error: 'Bitte eine gültige Discord-Webhook-URL eingeben.' });
+    if (webhook && !/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(webhook)) return json(res, 400, { error: 'Enter a valid Discord webhook URL.' });
     db.settings.discordWebhook = webhook; save(); return json(res, 200, { configured: Boolean(webhook) });
   }
   if (pathname === '/api/settings/discord/test' && req.method === 'POST') {
@@ -267,17 +273,17 @@ async function api(req, res, pathname) {
     catch (error) { return json(res, 502, { error: error.message }); }
   }
 
-  return json(res, 404, { error: 'Nicht gefunden.' });
+  return json(res, 404, { error: 'Not found.' });
 }
 
 function staticFile(req, res, pathname) {
   const requested = pathname === '/' ? '/index.html' : pathname;
   const file = path.resolve(PUBLIC_DIR, `.${requested}`);
   const publicRoot = path.resolve(PUBLIC_DIR);
-  if (file !== publicRoot && !file.startsWith(`${publicRoot}${path.sep}`)) return json(res, 403, { error: 'Nicht erlaubt.' });
+  if (file !== publicRoot && !file.startsWith(`${publicRoot}${path.sep}`)) return json(res, 403, { error: 'Forbidden.' });
   fs.readFile(file, (error, content) => {
     if (error) { res.writeHead(404); return res.end('Not found'); }
-    const cache = path.extname(file) === '.html' ? 'no-cache' : 'public, max-age=3600';
+    const cache = ['.html', '.js', '.css'].includes(path.extname(file)) ? 'no-cache' : 'public, max-age=3600';
     res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': cache });
     res.end(content);
   });
@@ -294,7 +300,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => console.log(`Subtrack läuft auf http://localhost:${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Subtrack is running at http://localhost:${PORT}`));
 setInterval(processDiscordReminders, 60_000).unref();
 setInterval(() => {
   for (const [id, value] of sessions) if (value.expires < Date.now()) sessions.delete(id);

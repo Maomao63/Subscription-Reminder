@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,13 +15,13 @@
       <div class="brand brand-large"><span class="brand-mark">S</span><span>subtrack</span></div>
       <div class="auth-copy">
         <span class="eyebrow">SUBSCRIPTIONS, UNDER CONTROL</span>
-        <h1 id="auth-title">Willkommen zurück.</h1>
-        <p id="auth-subtitle">Melde dich an und behalte deine Abonnements im Blick.</p>
+        <h1 id="auth-title">Welcome back.</h1>
+        <p id="auth-subtitle">Sign in to keep your subscriptions under control.</p>
       </div>
       <form id="auth-form" class="stack">
-        <label>Name<input id="username" name="username" autocomplete="username" placeholder="Dein Name" required minlength="2" maxlength="40"></label>
-        <label id="password-field">Passwort<input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required></label>
-        <button class="button primary wide" type="submit"><span id="auth-action">Anmelden</span><span aria-hidden="true">→</span></button>
+        <label>Username<input id="username" name="username" autocomplete="username" placeholder="Your username" required minlength="2" maxlength="40"></label>
+        <label id="password-field">Password<input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required></label>
+        <button class="button primary wide" type="submit"><span id="auth-action">Sign in</span><span aria-hidden="true">→</span></button>
       </form>
       <p id="auth-hint" class="auth-hint"></p>
     </section>
@@ -31,22 +31,22 @@
     <aside class="sidebar glass">
       <div class="brand"><span class="brand-mark">S</span><span>subtrack</span></div>
       <nav>
-        <button class="nav-item active" data-view="dashboard"><span class="icon">⌂</span>Übersicht</button>
-        <button class="nav-item" data-view="categories"><span class="icon">◇</span>Kategorien</button>
-        <button class="nav-item" data-view="settings"><span class="icon">⚙</span>Einstellungen</button>
+        <button class="nav-item active" data-view="dashboard"><span class="icon">⌂</span>Dashboard</button>
+        <button class="nav-item" data-view="categories"><span class="icon">◇</span>Categories</button>
+        <button class="nav-item" data-view="settings"><span class="icon">⚙</span>Settings</button>
       </nav>
       <div class="sidebar-bottom">
-        <div class="status-dot"><i></i><span>System aktiv</span></div>
-        <button id="logout" class="nav-item"><span class="icon">↪</span>Abmelden</button>
+        <div class="status-dot"><i></i><span>System online</span></div>
+        <button id="logout" class="nav-item"><span class="icon">↪</span>Sign out</button>
       </div>
     </aside>
 
     <div class="main-shell">
       <header class="topbar">
-        <button id="mobile-menu" class="icon-button mobile-only" aria-label="Menü">☰</button>
-        <div><p class="overline">SUBSCRIPTION REMINDER</p><h2 id="view-title">Übersicht</h2></div>
+        <button id="mobile-menu" class="icon-button mobile-only" aria-label="Menu">☰</button>
+        <div><p class="overline">SUBSCRIPTION REMINDER</p><h2 id="view-title">Dashboard</h2></div>
         <div class="top-actions">
-          <button id="notification-bell" class="icon-button" title="Browser-Benachrichtigungen">♢</button>
+          <button id="notification-bell" class="icon-button" title="Browser notifications">♢</button>
           <div class="avatar" id="avatar">A</div>
         </div>
       </header>
@@ -54,32 +54,32 @@
       <main class="content">
         <section id="dashboard-view" class="view active">
           <div class="hero glass">
-            <div><span class="eyebrow">DEIN ÜBERBLICK</span><h1>Guten Tag, <span id="greeting-name">Admin</span>.</h1><p>Alles Wichtige zu deinen laufenden Abonnements auf einen Blick.</p></div>
-            <button class="button primary" data-open-reminder><span>＋</span>Reminder hinzufügen</button>
+            <div><span class="eyebrow">YOUR OVERVIEW</span><h1>Welcome, <span id="greeting-name">Admin</span>.</h1><p>Everything important about your subscriptions at a glance.</p></div>
+            <button class="button primary" data-open-reminder><span>＋</span>Add reminder</button>
           </div>
 
           <div class="stats-grid">
-            <article class="stat-card glass"><span class="stat-icon purple">◫</span><div><strong id="stat-active">0</strong><p>Aktive Abos</p></div><span class="trend">Gesamt</span></article>
-            <article class="stat-card glass"><span class="stat-icon cyan">◷</span><div><strong id="stat-soon">0</strong><p>Laufen bald ab</p></div><span class="trend warning">30 Tage</span></article>
-            <article class="stat-card glass"><span class="stat-icon green">✓</span><div><strong id="stat-channels">0</strong><p>Kanäle aktiv</p></div><span class="trend">Live</span></article>
+            <article class="stat-card glass"><span class="stat-icon purple">◫</span><div><strong id="stat-active">0</strong><p>Active subscriptions</p></div><span class="trend">Total</span></article>
+            <article class="stat-card glass"><span class="stat-icon cyan">◷</span><div><strong id="stat-soon">0</strong><p>Expiring soon</p></div><span class="trend warning">30 days</span></article>
+            <article class="stat-card glass"><span class="stat-icon green">✓</span><div><strong id="stat-channels">0</strong><p>Channels enabled</p></div><span class="trend">Live</span></article>
           </div>
 
-          <div class="section-head"><div><h3>Deine Abonnements</h3><p id="subscription-count">0 Einträge</p></div><div class="filters"><button class="filter active" data-filter="all">Alle</button><button class="filter" data-filter="soon">Bald fällig</button></div></div>
+          <div class="section-head"><div><h3>Your subscriptions</h3><p id="subscription-count">0 entries</p></div><div class="filters"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="soon">Expiring soon</button></div></div>
           <div id="reminder-grid" class="reminder-grid"></div>
-          <div id="empty-state" class="empty-state glass hidden"><div class="empty-icon">＋</div><h3>Noch keine Reminder</h3><p>Füge dein erstes Abonnement hinzu und wir erinnern dich rechtzeitig.</p><button class="button primary" data-open-reminder>Ersten Reminder anlegen</button></div>
+          <div id="empty-state" class="empty-state glass hidden"><div class="empty-icon">＋</div><h3>No reminders yet</h3><p>Add your first subscription and we will remind you in time.</p><button class="button primary" data-open-reminder>Create first reminder</button></div>
         </section>
 
         <section id="categories-view" class="view">
-          <div class="page-head"><div><p class="eyebrow">ORGANISATION</p><h1>Kategorien</h1><p>Bringe Ordnung in deine Abonnements.</p></div><button class="button primary" id="open-category">＋ Kategorie</button></div>
+          <div class="page-head"><div><p class="eyebrow">ORGANIZATION</p><h1>Categories</h1><p>Keep your subscriptions neatly organized.</p></div><button class="button primary" id="open-category">＋ Category</button></div>
           <div id="category-grid" class="category-grid"></div>
         </section>
 
         <section id="settings-view" class="view">
-          <div class="page-head"><div><p class="eyebrow">KONFIGURATION</p><h1>Einstellungen</h1><p>Lege fest, wie du erinnert werden möchtest.</p></div></div>
+          <div class="page-head"><div><p class="eyebrow">CONFIGURATION</p><h1>Settings</h1><p>Choose how you want to receive reminders.</p></div></div>
           <div class="settings-grid">
-            <article class="settings-card glass"><div class="settings-heading"><span class="channel-logo discord">◈</span><div><h3>Discord</h3><p>Benachrichtigung über einen Webhook senden.</p></div><span id="discord-status" class="badge">Nicht verbunden</span></div><form id="discord-form"><label>Webhook URL<div class="input-action"><input id="discord-webhook" type="url" placeholder="https://discord.com/api/webhooks/…"><button type="button" id="toggle-webhook" aria-label="URL anzeigen">◉</button></div></label><div class="button-row"><button class="button secondary" id="test-discord" type="button">Test senden</button><button class="button primary" type="submit">Speichern</button></div></form></article>
-            <article class="settings-card glass"><div class="settings-heading"><span class="channel-logo browser">♢</span><div><h3>Browser Pop-ups</h3><p>Native Benachrichtigungen direkt in Windows.</p></div><span id="browser-status" class="badge">Unbekannt</span></div><div class="browser-info"><p>Dein Browser fragt einmalig nach Erlaubnis. Danach erscheinen fällige Reminder als Systemmeldung, solange Subtrack geöffnet ist.</p><button class="button primary" id="enable-browser">Benachrichtigungen aktivieren</button></div></article>
-            <article class="settings-card glass password-card"><div class="settings-heading"><span class="channel-logo security">⌁</span><div><h3>Sicherheit</h3><p>Ändere dein persönliches Passwort.</p></div></div><button class="button secondary" id="open-password">Passwort ändern</button></article>
+            <article class="settings-card glass"><div class="settings-heading"><span class="channel-logo discord">◈</span><div><h3>Discord</h3><p>Send notifications through a webhook.</p></div><span id="discord-status" class="badge">Not connected</span></div><form id="discord-form"><label>Webhook URL<div class="input-action"><input id="discord-webhook" type="url" placeholder="https://discord.com/api/webhooks/…"><button type="button" id="toggle-webhook" aria-label="Show URL">◉</button></div></label><div class="button-row"><button class="button secondary" id="test-discord" type="button">Send test</button><button class="button primary" type="submit">Save</button></div></form></article>
+            <article class="settings-card glass"><div class="settings-heading"><span class="channel-logo browser">♢</span><div><h3>Browser pop-ups</h3><p>Native notifications directly in Windows.</p></div><span id="browser-status" class="badge">Unknown</span></div><div class="browser-info"><p>Your browser asks for permission once. Due reminders then appear as system notifications while Subtrack is open.</p><button class="button primary" id="enable-browser">Enable notifications</button></div></article>
+            <article class="settings-card glass password-card"><div class="settings-heading"><span class="channel-logo security">⌁</span><div><h3>Security</h3><p>Change your personal password.</p></div></div><button class="button secondary" id="open-password">Change password</button></article>
           </div>
         </section>
       </main>
@@ -88,21 +88,21 @@
 
   <dialog id="reminder-dialog" class="modal">
     <form id="reminder-form" method="dialog">
-      <div class="modal-head"><div><p class="eyebrow">ABONNEMENT</p><h2 id="reminder-dialog-title">Reminder hinzufügen</h2></div><button class="close-button" value="cancel" aria-label="Schließen">×</button></div>
+      <div class="modal-head"><div><p class="eyebrow">SUBSCRIPTION</p><h2 id="reminder-dialog-title">Add reminder</h2></div><button class="close-button" value="cancel" aria-label="Close">×</button></div>
       <input id="reminder-id" type="hidden">
-      <label>Name des Abonnements<input id="reminder-name" placeholder="z. B. Spotify Premium" required maxlength="80"></label>
-      <div class="form-grid"><label>Ablaufdatum<input id="reminder-date" type="date" required></label><label>Kategorie<select id="reminder-category"></select></label></div>
-      <label>Erinnerung im Voraus<div class="range-row"><input id="reminder-days" type="range" min="0" max="30" value="7"><output id="days-output">7 Tage</output></div></label>
-      <div class="toggle-list"><label class="toggle-row"><span><b>Discord Notification</b><small>Per Webhook benachrichtigen</small></span><input id="reminder-discord" type="checkbox"><i></i></label><label class="toggle-row"><span><b>Browser Pop-up</b><small>Native Windows-Benachrichtigung</small></span><input id="reminder-browser" type="checkbox"><i></i></label></div>
-      <div class="modal-actions"><button class="button ghost" value="cancel">Abbrechen</button><button class="button primary" id="save-reminder" type="submit">Reminder speichern</button></div>
+      <label>Subscription name<input id="reminder-name" placeholder="e.g. Spotify Premium" required maxlength="80"></label>
+      <div class="form-grid"><label>Expiration date<input id="reminder-date" type="date" required></label><label>Category<select id="reminder-category"></select></label></div>
+      <label>Remind me in advance<div class="range-row"><input id="reminder-days" type="range" min="0" max="30" value="7"><output id="days-output">7 days</output></div></label>
+      <div class="toggle-list"><label class="toggle-row"><span><b>Discord notification</b><small>Notify through your webhook</small></span><input id="reminder-discord" type="checkbox"><i></i></label><label class="toggle-row"><span><b>Browser pop-up</b><small>Native Windows notification</small></span><input id="reminder-browser" type="checkbox"><i></i></label></div>
+      <div class="modal-actions"><button class="button ghost" value="cancel">Cancel</button><button class="button primary" id="save-reminder" type="submit">Save reminder</button></div>
     </form>
   </dialog>
 
-  <dialog id="category-dialog" class="modal small-modal"><form id="category-form" method="dialog"><div class="modal-head"><div><p class="eyebrow">ORGANISATION</p><h2>Neue Kategorie</h2></div><button class="close-button" value="cancel">×</button></div><label>Name<input id="category-name" placeholder="z. B. Versicherungen" maxlength="30" required></label><label>Akzentfarbe<input id="category-color" type="color" value="#8b5cf6"></label><div class="modal-actions"><button class="button ghost" value="cancel">Abbrechen</button><button class="button primary" type="submit">Hinzufügen</button></div></form></dialog>
+  <dialog id="category-dialog" class="modal small-modal"><form id="category-form" method="dialog"><div class="modal-head"><div><p class="eyebrow">ORGANIZATION</p><h2>New category</h2></div><button class="close-button" value="cancel">×</button></div><label>Name<input id="category-name" placeholder="e.g. Insurance" maxlength="30" required></label><label>Accent color<input id="category-color" type="color" value="#8b5cf6"></label><div class="modal-actions"><button class="button ghost" value="cancel">Cancel</button><button class="button primary" type="submit">Add category</button></div></form></dialog>
 
-  <dialog id="password-dialog" class="modal small-modal"><form id="password-form" method="dialog"><div class="modal-head"><div><p class="eyebrow">SICHERHEIT</p><h2>Sicheres Passwort wählen</h2></div><button id="password-close" class="close-button" value="cancel">×</button></div><p class="modal-copy">Mindestens 10 Zeichen, Groß- und Kleinbuchstaben sowie eine Zahl.</p><label>Aktuelles Passwort<input id="current-password" type="password" autocomplete="current-password" required></label><label>Neues Passwort<input id="new-password" type="password" autocomplete="new-password" required minlength="10"></label><label>Passwort wiederholen<input id="confirm-password" type="password" autocomplete="new-password" required minlength="10"></label><div class="modal-actions"><button class="button ghost password-cancel" value="cancel">Später</button><button class="button primary" type="submit">Passwort speichern</button></div></form></dialog>
+  <dialog id="password-dialog" class="modal small-modal"><form id="password-form" method="dialog"><div class="modal-head"><div><p class="eyebrow">SECURITY</p><h2>Choose a secure password</h2></div><button id="password-close" class="close-button" value="cancel">×</button></div><p class="modal-copy">Use at least 10 characters including uppercase, lowercase and a number.</p><label>Current password<input id="current-password" type="password" autocomplete="current-password" required></label><label>New password<input id="new-password" type="password" autocomplete="new-password" required minlength="10"></label><label>Confirm new password<input id="confirm-password" type="password" autocomplete="new-password" required minlength="10"></label><div id="password-error" class="form-error hidden" role="alert"></div><div class="modal-actions"><button class="button ghost password-cancel" value="cancel">Later</button><button class="button primary" id="password-submit" type="submit">Save password</button></div></form></dialog>
 
-  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <div id="toast-region" class="toast-region" popover="manual" aria-live="polite"></div>
   <script src="/app.js" defer></script>
 </body>
 </html>
