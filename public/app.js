@@ -25,14 +25,10 @@ function toast(message, type = 'success') {
   item.className = `toast ${type}`;
   item.textContent = message;
   region.append(item);
-  if ('showPopover' in region) {
-    try { if (!region.matches(':popover-open')) region.showPopover(); } catch {}
-  }
+  region.classList.remove('hidden');
   setTimeout(() => {
     item.remove();
-    if (!region.children.length && 'hidePopover' in region) {
-      try { region.hidePopover(); } catch {}
-    }
+    if (!region.children.length) region.classList.add('hidden');
   }, 5000);
 }
 
@@ -301,14 +297,6 @@ $('#enable-browser').addEventListener('click', async () => {
     else showFormError('#browser-error', 'Notification permission was not granted.');
   } catch (error) { showFormError('#browser-error', error.message); }
 });
-$('#notification-bell').addEventListener('click', () => {
-  document.querySelector('.nav-item[data-view="settings"]').click();
-  const card = $('#browser-settings-card');
-  card.classList.add('attention');
-  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  setTimeout(() => card.classList.remove('attention'), 1800);
-});
-
 let pollingStarted = false;
 function startBrowserPolling() {
   if (pollingStarted) return; pollingStarted = true;
@@ -383,7 +371,8 @@ $$('[data-close-dialog]').forEach(button => button.addEventListener('click', () 
 $$('.nav-item[data-view]').forEach(button => button.addEventListener('click', () => {
   $$('.nav-item[data-view]').forEach(item => item.classList.toggle('active', item === button));
   $$('.view').forEach(view => view.classList.toggle('active', view.id === `${button.dataset.view}-view`));
-  $('#view-title').textContent = button.textContent.trim(); $('.sidebar').classList.remove('open');
+  const titles = { dashboard: 'Dashboard', categories: 'Categories', settings: 'Settings' };
+  $('#view-title').textContent = titles[button.dataset.view]; $('.sidebar').classList.remove('open');
 }));
 $$('.filter').forEach(button => button.addEventListener('click', () => { filter = button.dataset.filter; $$('.filter').forEach(item => item.classList.toggle('active', item === button)); renderReminders(); }));
 $('#mobile-menu').addEventListener('click', () => $('.sidebar').classList.toggle('open'));
