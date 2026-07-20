@@ -277,28 +277,36 @@ function showPasswordError(message) {
   error.classList.remove('hidden');
 }
 ['#current-password', '#new-password', '#confirm-password'].forEach(selector => $(selector).addEventListener('input', () => $('#password-error').classList.add('hidden')));
-$('#password-form').addEventListener('submit', async event => {
-  event.preventDefault();
+let passwordSaving = false;
+async function savePassword() {
+  if (passwordSaving) return;
+  const current = $('#current-password').value;
   const next = $('#new-password').value;
+  if (!current) return showPasswordError('Enter your current password. For the first sign-in, use admin.');
+  if (!next) return showPasswordError('Enter a new password.');
   if (next !== $('#confirm-password').value) return showPasswordError('The new passwords do not match.');
   if (next.length < 10 || !/[a-z]/.test(next) || !/[A-Z]/.test(next) || !/\d/.test(next)) {
     return showPasswordError('Use at least 10 characters including uppercase, lowercase and a number.');
   }
   const submit = $('#password-submit');
+  passwordSaving = true;
   submit.disabled = true;
   submit.textContent = 'Saving…';
   try {
-    await request('/api/password', { method: 'PUT', body: JSON.stringify({ currentPassword: $('#current-password').value, newPassword: next }) });
+    await request('/api/password', { method: 'PUT', body: JSON.stringify({ currentPassword: current, newPassword: next }) });
     state.user.mustChangePassword = false;
     passwordDialog.close();
     toast('Your password has been saved securely.');
   } catch (error) {
     showPasswordError(error.message);
   } finally {
+    passwordSaving = false;
     submit.disabled = false;
     submit.textContent = 'Save password';
   }
-});
+}
+$('#password-submit').addEventListener('click', savePassword);
+$('#password-form').addEventListener('submit', event => { event.preventDefault(); savePassword(); });
 
 $$('.nav-item[data-view]').forEach(button => button.addEventListener('click', () => {
   $$('.nav-item[data-view]').forEach(item => item.classList.toggle('active', item === button));
