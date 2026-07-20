@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 const PORT = Number(process.env.PORT || 13000);
 const DATA_DIR = process.env.CONFIG_DIR || process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = process.env.CONFIG_FILE || path.join(DATA_DIR, 'config.json');
@@ -337,6 +337,16 @@ async function api(req, res, pathname) {
     const current = requireAuth(req, res, true); if (!current) return;
     try { await sendDiscord({ name: 'Test', expiresAt: new Date().toISOString().slice(0, 10), categoryId: '', remindDays: 0 }, 'connection-test'); return json(res, 200, { ok: true }); }
     catch (error) { return json(res, 502, { error: error.message }); }
+  }
+  if (pathname === '/api/settings/discord/final-test' && req.method === 'POST') {
+    const current = requireAuth(req, res, true); if (!current) return;
+    if (!db.settings.discordWebhook) return json(res, 400, { error: 'Save a Discord webhook before testing the final ping.' });
+    if (!db.settings.discordMentionType || db.settings.discordMentionType === 'none') return json(res, 400, { error: 'Choose and save a final reminder mention target first.' });
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    try {
+      await sendDiscord({ name: 'Emergency ping test', expiresAt: tomorrow, categoryId: '', remindDays: 1 }, 'final');
+      return json(res, 200, { ok: true });
+    } catch (error) { return json(res, 502, { error: error.message }); }
   }
 
   return json(res, 404, { error: 'Not found.' });

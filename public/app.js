@@ -312,6 +312,23 @@ $('#test-discord').addEventListener('click', async () => {
   try { await request('/api/settings/discord/test', { method: 'POST' }); toast('Test message sent to Discord.'); }
   catch (error) { showFormError('#discord-error', error.message); }
 });
+$('#test-final-discord').addEventListener('click', async () => {
+  clearFormError('#discord-error');
+  if (!state.settings.discordConfigured) return showFormError('#discord-error', 'Save your Discord settings before testing the final ping.');
+  if (!state.settings.discordMentionType || state.settings.discordMentionType === 'none') return showFormError('#discord-error', 'Choose and save a final reminder mention target first.');
+  const mentionType = $('#discord-mention-type').value;
+  const mentionId = ['role', 'user'].includes(mentionType) ? $('#discord-mention-id').value.trim() : '';
+  if ($('#discord-webhook').value.trim() !== state.settings.discordWebhook || mentionType !== state.settings.discordMentionType || mentionId !== (state.settings.discordMentionId || '')) {
+    return showFormError('#discord-error', 'Save your current Discord settings before testing the final ping.');
+  }
+  const button = $('#test-final-discord');
+  button.disabled = true; button.textContent = 'Sending ping…';
+  try {
+    await request('/api/settings/discord/final-test', { method: 'POST' });
+    toast('Final 1-day ping sent to Discord.');
+  } catch (error) { showFormError('#discord-error', error.message); }
+  finally { button.disabled = false; button.textContent = 'Test 1-day ping'; }
+});
 $('#discord-webhook').addEventListener('input', () => clearFormError('#discord-error'));
 function updateMentionField() {
   const type = $('#discord-mention-type').value;

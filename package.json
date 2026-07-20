@@ -1,6 +1,6 @@
 {
   "name": "subtrack",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Self-hosted subscription reminder with Discord and browser notifications",
   "main": "index.js",
   "scripts": {
