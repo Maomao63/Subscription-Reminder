@@ -1,0 +1,13 @@
+services:
+  subtrack:
+    build: .
+    image: subtrack:latest
+    container_name: subtrack
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - subtrack-data:/app/data
+
+volumes:
+  subtrack-data:
