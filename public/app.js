@@ -158,18 +158,37 @@ function updateDiscordStatus() {
   status.className = `badge ${state.settings.discordConfigured ? 'connected' : ''}`;
 }
 
+function notificationCapability() {
+  if (!window.isSecureContext) return { supported: false, reason: 'secure-context' };
+  if (!('Notification' in window)) return { supported: false, reason: 'notifications-api' };
+  if (!('serviceWorker' in navigator)) return { supported: false, reason: 'service-worker' };
+  return { supported: true };
+}
+
 function updateBrowserStatus() {
-  if (!('Notification' in window)) {
-    $('#browser-status').textContent = 'Not supported';
+  const capability = notificationCapability();
+  const help = $('#browser-help');
+  const button = $('#enable-browser');
+  if (!capability.supported) {
+    const needsHttps = capability.reason === 'secure-context';
+    $('#browser-status').textContent = needsHttps ? 'HTTPS required' : 'Unavailable';
     $('#browser-status').className = 'badge denied';
-    $('#enable-browser').disabled = true;
+    help.textContent = needsHttps
+      ? 'Native system notifications require a secure HTTPS connection. Plain HTTP is only allowed on localhost; an Unraid IP address over HTTP is not considered secure by browsers.'
+      : 'This browser does not provide the Notification and Service Worker APIs required for native system notifications.';
+    button.textContent = needsHttps ? 'Open Subtrack through HTTPS' : 'Notifications unavailable';
+    button.disabled = true;
     return;
   }
   const status = $('#browser-status');
   const labels = { granted: 'Enabled', denied: 'Blocked', default: 'Not enabled' };
   status.textContent = labels[Notification.permission];
   status.className = `badge ${Notification.permission === 'granted' ? 'connected' : Notification.permission === 'denied' ? 'denied' : ''}`;
-  $('#enable-browser').textContent = Notification.permission === 'granted' ? 'Send test notification' : 'Enable notifications';
+  help.textContent = Notification.permission === 'denied'
+    ? 'Notifications are blocked in this browser. Allow them in the site permissions and reload Subtrack.'
+    : 'Your browser asks for permission once. Due reminders then appear as native system notifications while Subtrack is open.';
+  button.textContent = Notification.permission === 'granted' ? 'Send test notification' : 'Enable notifications';
+  button.disabled = Notification.permission === 'denied';
 }
 
 function openReminder(reminder = null) {
@@ -204,7 +223,11 @@ $('#reminder-form').addEventListener('submit', async event => {
     const saved = await request(id ? `/api/reminders/${id}` : '/api/reminders', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
     if (id) state.reminders[state.reminders.findIndex(item => item.id === id)] = saved; else state.reminders.push(saved);
     reminderDialog.close(); renderAll(); toast(id ? 'Reminder updated.' : 'Reminder added.');
-    if (payload.browser && 'Notification' in window && Notification.permission === 'default') toast('Enable browser pop-ups in Settings.', 'error');
+    if (payload.browser) {
+      const capability = notificationCapability();
+      if (!capability.supported) toast(capability.reason === 'secure-context' ? 'Browser pop-ups require HTTPS when Subtrack is opened from another device.' : 'Browser pop-ups are unavailable in this browser.', 'error');
+      else if (Notification.permission === 'default') toast('Enable browser pop-ups in Settings.', 'error');
+    }
   } catch (error) { showFormError('#reminder-error', error.message); }
 });
 ['#reminder-name', '#reminder-date'].forEach(selector => $(selector).addEventListener('input', () => clearFormError('#reminder-error')));
@@ -252,18 +275,39 @@ $('#test-discord').addEventListener('click', async () => {
 $('#discord-webhook').addEventListener('input', () => clearFormError('#discord-error'));
 $('#toggle-webhook').addEventListener('click', () => { const input = $('#discord-webhook'); input.type = input.type === 'password' ? 'url' : 'password'; });
 
+let serviceWorkerRegistration;
+async function ensureServiceWorker() {
+  if (!notificationCapability().supported) throw new Error('A secure HTTPS connection is required for browser notifications.');
+  if (!serviceWorkerRegistration) {
+    serviceWorkerRegistration = navigator.serviceWorker.register('/sw.js').then(() => navigator.serviceWorker.ready);
+  }
+  return serviceWorkerRegistration;
+}
+
 async function browserNotification(title = 'Subtrack is ready', body = 'Browser notifications are working.') {
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await ensureServiceWorker();
   await registration.showNotification(title, { body, icon: '/icon.svg', badge: '/icon.svg', tag: `subtrack-${title}` });
 }
 
 $('#enable-browser').addEventListener('click', async () => {
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return toast('Your browser does not support this feature.', 'error');
-  const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-  updateBrowserStatus(); renderStats();
-  if (permission === 'granted') browserNotification(); else toast('Notification permission was not granted.', 'error');
+  clearFormError('#browser-error');
+  const capability = notificationCapability();
+  if (!capability.supported) return showFormError('#browser-error', capability.reason === 'secure-context' ? 'HTTPS is required. Use a trusted reverse proxy URL instead of an HTTP IP address.' : 'The required browser APIs are unavailable.');
+  try {
+    await ensureServiceWorker();
+    const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+    updateBrowserStatus(); renderStats();
+    if (permission === 'granted') await browserNotification();
+    else showFormError('#browser-error', 'Notification permission was not granted.');
+  } catch (error) { showFormError('#browser-error', error.message); }
 });
-$('#notification-bell').addEventListener('click', () => $('#enable-browser').click());
+$('#notification-bell').addEventListener('click', () => {
+  document.querySelector('.nav-item[data-view="settings"]').click();
+  const card = $('#browser-settings-card');
+  card.classList.add('attention');
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => card.classList.remove('attention'), 1800);
+});
 
 let pollingStarted = false;
 function startBrowserPolling() {
@@ -271,7 +315,7 @@ function startBrowserPolling() {
   checkBrowserNotifications(); setInterval(checkBrowserNotifications, 60_000);
 }
 async function checkBrowserNotifications() {
-  if (!state || !('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!state || !notificationCapability().supported || Notification.permission !== 'granted') return;
   try {
     const pending = await request('/api/browser-notifications');
     for (const reminder of pending) {
@@ -344,5 +388,5 @@ $$('.filter').forEach(button => button.addEventListener('click', () => { filter 
 $('#mobile-menu').addEventListener('click', () => $('.sidebar').classList.toggle('open'));
 $('#logout').addEventListener('click', async () => { try { await request('/api/logout', { method: 'POST' }); } finally { state = null; location.reload(); } });
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+if (notificationCapability().supported) ensureServiceWorker().catch(error => console.warn('Service Worker registration failed:', error.message));
 init();

@@ -46,7 +46,7 @@
         <button id="mobile-menu" class="icon-button mobile-only" aria-label="Menu">☰</button>
         <div><p class="overline">SUBSCRIPTION REMINDER</p><h2 id="view-title">Dashboard</h2></div>
         <div class="top-actions">
-          <button id="notification-bell" class="icon-button" title="Browser notifications">♢</button>
+          <button id="notification-bell" class="icon-button" type="button" title="Notification settings" aria-label="Open notification settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button>
           <div class="avatar" id="avatar">A</div>
         </div>
       </header>
@@ -78,7 +78,7 @@
           <div class="page-head"><div><p class="eyebrow">CONFIGURATION</p><h1>Settings</h1><p>Choose how you want to receive reminders.</p></div></div>
           <div class="settings-grid">
             <article class="settings-card glass"><div class="settings-heading"><span class="channel-logo discord">◈</span><div><h3>Discord</h3><p>Send notifications through a webhook.</p></div><span id="discord-status" class="badge">Not connected</span></div><form id="discord-form" novalidate><label>Webhook URL<div class="input-action"><input id="discord-webhook" type="url" placeholder="https://discord.com/api/webhooks/…"><button type="button" id="toggle-webhook" aria-label="Show URL">◉</button></div></label><div id="discord-error" class="form-error hidden" role="alert"></div><div class="button-row"><button class="button secondary" id="test-discord" type="button">Send test</button><button class="button primary" type="submit">Save</button></div></form></article>
-            <article class="settings-card glass"><div class="settings-heading"><span class="channel-logo browser">♢</span><div><h3>Browser pop-ups</h3><p>Native notifications directly in Windows.</p></div><span id="browser-status" class="badge">Unknown</span></div><div class="browser-info"><p>Your browser asks for permission once. Due reminders then appear as system notifications while Subtrack is open.</p><button class="button primary" id="enable-browser">Enable notifications</button></div></article>
+            <article id="browser-settings-card" class="settings-card glass"><div class="settings-heading"><span class="channel-logo browser"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><div><h3>Browser pop-ups</h3><p>Native notifications directly in Windows.</p></div><span id="browser-status" class="badge">Unknown</span></div><div class="browser-info"><p id="browser-help">Your browser asks for permission once. Due reminders then appear as system notifications while Subtrack is open.</p><div id="browser-error" class="form-error hidden" role="alert"></div><button class="button primary" id="enable-browser" type="button">Enable notifications</button></div></article>
             <article class="settings-card glass password-card"><div class="settings-heading"><span class="channel-logo security">⌁</span><div><h3>Security</h3><p>Change your personal password.</p></div></div><button class="button secondary" id="open-password">Change password</button></article>
           </div>
         </section>
